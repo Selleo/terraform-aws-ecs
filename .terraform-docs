@@ -1,0 +1,4 @@
+settings:
+  color: true
+  hide-empty: true
+  indent: 2
