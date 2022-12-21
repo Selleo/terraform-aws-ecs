@@ -49,7 +49,7 @@ variable "fargate" {
 }
 
 variable "public_ip" {
-  description = "Assign public IP for ECS service."
+  description = "Assign public IP for ECS service (only used with fargate)."
   type        = bool
   default     = false
 }

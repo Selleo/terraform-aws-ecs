@@ -1,6 +1,6 @@
-# Terraform RENAME_ME module
+# Terraform Elastic Container Service (ECS) module
 
-TODO
+ECS modules that supports EC2/Fargate launch mode and SSM paramters for secrets.
 
 <!-- BEGIN_TF_DOCS -->
 

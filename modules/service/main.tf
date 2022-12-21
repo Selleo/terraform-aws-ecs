@@ -206,10 +206,14 @@ resource "aws_ecs_service" "this" {
     container_port   = var.container.port
   }
 
-  network_configuration {
-    security_groups  = [aws_security_group.this.id]
-    subnets          = var.subnet_ids
-    assign_public_ip = var.public_ip
+  dynamic "network_configuration" {
+    for_each = var.fargate ? [1] : []
+
+    content {
+      security_groups  = [aws_security_group.this.id]
+      subnets          = var.subnet_ids
+      assign_public_ip = var.public_ip
+    }
   }
 
   desired_count                      = var.desired_count
@@ -220,8 +224,8 @@ resource "aws_ecs_service" "this" {
     for_each = var.fargate ? [] : local.ordered_placement_strategy
 
     content {
-      type  = each.type
-      field = each.field
+      type  = ordered_placement_strategy.value.type
+      field = ordered_placement_strategy.value.field
     }
   }
 
@@ -359,8 +363,7 @@ resource "aws_alb_target_group" "this" {
   protocol             = "HTTP"
   vpc_id               = var.vpc_id
   deregistration_delay = 30 # draining time
-  # target_type          = var.fargate ? "ip" : "instance"
-  target_type = "ip"
+  target_type          = var.fargate ? "ip" : "instance"
 
   health_check {
     path                = var.health_check.path

@@ -1,7 +1,7 @@
 resource "random_id" "example" {
   byte_length = 4
 
-  prefix = "tf-example"
+  prefix = "fargate"
 }
 
 module "vpc" {
@@ -27,12 +27,6 @@ module "cluster" {
   subnet_ids           = module.vpc.public_subnets
   instance_type        = "t3.nano"
   lb_security_group_id = module.lb.security_group_id
-
-  autoscaling_group = {
-    min_size         = 1
-    max_size         = 5
-    desired_capacity = 1
-  }
 }
 
 module "lb" {
@@ -53,9 +47,8 @@ module "service" {
   subnet_ids    = module.vpc.public_subnets
   cluster_id    = module.cluster.id
   desired_count = 1
-  fargate       = true
-  public_ip     = true
   secrets       = ["/example/staging/api"]
+  fargate       = true
 
   container = {
     mem_reservation_units = 128
