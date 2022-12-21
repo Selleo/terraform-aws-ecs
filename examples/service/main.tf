@@ -38,3 +38,36 @@ module "lb" {
   vpc_id     = module.vpc.vpc_id
   subnet_ids = module.vpc.public_subnets
 }
+
+module "ecs_service" {
+  source = "../../modules/service"
+
+  name           = "test"
+  vpc_id         = module.vpc.vpc_id
+  ecs_cluster_id = module.ecs_cluster.cluster_id
+  desired_count  = 1
+
+  container = {
+    mem_reservation_units = 256
+    port = 4567
+    cpu_units      = 256
+    mem_units      = 256
+    command        = ["bundle", "exec", "ruby", "main.rb"],
+    image          = "qbart/hello-ruby-sinatra:latest",
+    container_port = 4567
+    envs = {
+      "APP_ENV" = "production"
+    }
+  }
+}
+
+resource "aws_alb_listener" "http" {
+  load_balancer_arn = module.lb.id
+  port              = 80
+  protocol          = "HTTP"
+
+  default_action {
+    target_group_arn = module.ecs_service.lb_target_group_id
+    type             = "forward"
+  }
+}
