@@ -94,3 +94,7 @@ module "secrets" {
     APP_ENV = "staging"
   }
 }
+
+output "lb_dns" {
+  value = "http://${module.lb.dns_name}"
+}

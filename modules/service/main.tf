@@ -212,7 +212,7 @@ resource "aws_ecs_service" "this" {
     content {
       security_groups  = [aws_security_group.this.id]
       subnets          = var.subnet_ids
-      assign_public_ip = var.public_ip
+      assign_public_ip = true
     }
   }
 

@@ -48,12 +48,6 @@ variable "fargate" {
   default     = false
 }
 
-variable "public_ip" {
-  description = "Assign public IP for ECS service (only used with fargate)."
-  type        = bool
-  default     = false
-}
-
 variable "secrets" {
   description = "Paths to secret. All secrets are read under the path."
   type        = set(string)
