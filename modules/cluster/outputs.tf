@@ -1,4 +1,4 @@
-output "cluster_id" {
+output "id" {
   value       = aws_ecs_cluster.this.id
   description = "ECS cluster ID (contains randomized suffix)."
 }
@@ -26,3 +26,7 @@ output "autoscaling_group" {
   }
 }
 
+output "key_name" {
+  description = "Key pair name for SSH access."
+  value       = aws_key_pair.this.key_name
+}

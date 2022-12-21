@@ -19,46 +19,51 @@ module "vpc" {
   enable_vpn_gateway = false
 }
 
-module "ecs-cluster" {
+module "cluster" {
   source = "../../modules/cluster"
 
-  name_prefix          = ""
-  region               = "eu-central-1"
+  name_prefix          = random_id.example.hex
   vpc_id               = module.vpc.vpc_id
-  subnet_ids           = module.vpc.private_subnets
-  instance_type        = "t3.medium"
+  subnet_ids           = module.vpc.public_subnets
+  instance_type        = "t3.nano"
   lb_security_group_id = module.lb.security_group_id
+  allow_ssh = true
+
+  autoscaling_group = {
+    min_size         = 1
+    max_size         = 5
+    desired_capacity = 1
+  }
 }
 
 module "lb" {
   source  = "Selleo/backend/aws//modules/load-balancer"
-  version = "0.21.0"
+  version = "0.23.0"
 
-  name       = "staging-internals"
-  vpc_id     = module.vpc.vpc_id
-  subnet_ids = module.vpc.public_subnets
+  name        = random_id.example.hex
+  vpc_id      = module.vpc.vpc_id
+  subnet_ids  = module.vpc.public_subnets
+  force_https = false
 }
 
-module "ecs_service" {
+module "service" {
   source = "../../modules/service"
 
-  name           = "test"
+  name           = random_id.example.hex
   vpc_id         = module.vpc.vpc_id
-  ecs_cluster_id = module.ecs_cluster.cluster_id
+  ecs_cluster_id = module.cluster.id
   desired_count  = 1
 
   container = {
-    mem_reservation_units = 256
-    port = 4567
-    cpu_units      = 256
-    mem_units      = 256
-    command        = ["bundle", "exec", "ruby", "main.rb"],
-    image          = "qbart/hello-ruby-sinatra:latest",
-    container_port = 4567
-    envs = {
-      "APP_ENV" = "production"
-    }
+    mem_reservation_units = 128
+    cpu_units             = 256
+    mem_units             = 256
+
+    image = "qbart/go-http-server-noop:latest",
+    port  = 4000
   }
+
+  secrets = ["/example/staging/api"]
 }
 
 resource "aws_alb_listener" "http" {
@@ -67,7 +72,24 @@ resource "aws_alb_listener" "http" {
   protocol          = "HTTP"
 
   default_action {
-    target_group_arn = module.ecs_service.lb_target_group_id
+    target_group_arn = module.service.lb_target_group_id
     type             = "forward"
+  }
+}
+
+module "secrets" {
+  source  = "Selleo/ssm/aws//modules/parameters"
+  version = "0.2.0"
+
+  context = {
+    namespace = "example"
+    stage     = "staging"
+    name      = "api"
+  }
+
+  path = "/example/staging/api"
+
+  secrets = {
+    APP_ENV = "staging"
   }
 }

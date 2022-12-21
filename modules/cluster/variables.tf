@@ -5,11 +5,6 @@ variable "name_prefix" {
   description = "Name prefix (hyphen suffix should be skipped)."
 }
 
-variable "region" {
-  type        = string
-  description = "AWS region for cluster."
-}
-
 variable "vpc_id" {
   type        = string
   description = "AWS VPC id."
@@ -55,7 +50,7 @@ variable "tags" {
 variable "ssm_tag_key" {
   type        = string
   description = "Tag key to add for SSM access"
-  default     = "SSMAccess"
+  default     = "ssm.group"
 }
 
 variable "ssm_tag_value" {
@@ -73,12 +68,6 @@ variable "protect_from_scale_in" {
 variable "ami" {
   type        = string
   description = "Image ID for Autoscaling group. If left blank, latest ECS-optimized version will be used."
-  default     = ""
-}
-
-variable "key_name" {
-  type        = string
-  description = "Key pair name for SSH access."
   default     = ""
 }
 
@@ -150,4 +139,10 @@ variable "placement_group" {
     strategy     = "spread"
     spread_level = "rack"
   }
+}
+
+variable "allow_ssh" {
+  description = "Allow SSH port in SG."
+  type        = bool
+  default     = false
 }

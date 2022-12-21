@@ -27,7 +27,6 @@ variable "container" {
     mem_reservation_units = number
     image                 = string
     port                  = number
-    envs                  = map(string)
   })
   description = <<EOS
     Service container configuration.
@@ -37,6 +36,24 @@ variable "container" {
 }
 
 # optional
+
+variable "fargate" {
+  description = "Whether to run in FARGATE mode (serverless)."
+  type        = bool
+  default     = false
+}
+
+variable "secrets" {
+  description = "Paths to secret. All secrets are read under the path."
+  type        = set(string)
+  default     = []
+}
+
+variable "envs" {
+  description = "Key-value map of environment variables."
+  type        = map(string)
+  default     = {}
+}
 
 variable "tags" {
   type        = map(string)
@@ -61,7 +78,7 @@ variable "health_check" {
     path    = string
     matcher = string
   })
-  description = "Healt check config for ALB target group."
+  description = "Health check config for ALB target group."
   default = {
     path    = "/"
     matcher = "200"

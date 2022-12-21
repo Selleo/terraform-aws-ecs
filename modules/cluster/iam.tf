@@ -1,5 +1,5 @@
 resource "aws_iam_role" "instance_role" {
-  name               = "${random_id.prefix.hex}-ec2"
+  name               = "${random_id.prefix.hex}-cluster-instance"
   assume_role_policy = data.aws_iam_policy_document.instance_role.json
 
   tags = var.tags
@@ -20,7 +20,7 @@ data "aws_iam_policy_document" "instance_role" {
 }
 
 resource "aws_iam_instance_profile" "instance_profile" {
-  name = "${random_id.prefix.hex}-ec2"
+  name = "${random_id.prefix.hex}-cluster-instance"
   role = aws_iam_role.instance_role.name
 }
 
@@ -40,13 +40,8 @@ data "aws_iam_policy_document" "ecs_instance" {
       "ecs:Poll",
       "ecs:Submit*",
       "ecs:StartTelemetrySession",
-      "ecr:GetAuthorizationToken",
-      "ecr:BatchCheckLayerAvailability",
-      "ecr:GetDownloadUrlForLayer",
-      "ecr:BatchGetImage"
     ]
 
     resources = ["*"]
   }
 }
-

@@ -1,4 +1,5 @@
-data "aws_region" "current" {}
+data "aws_region" "this" {}
+data "aws_caller_identity" "this" {}
 
 locals {
   task_definition = "${aws_ecs_task_definition.this.family}:${max(
@@ -9,6 +10,20 @@ locals {
   container_definition_overrides = {
     command = var.command
   }
+
+  secrets_kv = [
+    for each_secret in data.aws_ssm_parameters_by_path.secrets :
+    zipmap(each_secret.names, each_secret.arns)
+  ]
+
+  secrets = flatten([
+    for secrets_kv in local.secrets_kv : [
+      for k, v in secrets_kv : {
+        name      = reverse(split("/", k))[0]
+        valueFrom = v
+      }
+    ]
+  ])
 }
 
 resource "random_id" "prefix" {
@@ -33,7 +48,11 @@ resource "aws_cloudwatch_log_group" "one_off" {
 }
 
 resource "aws_ecs_task_definition" "this" {
-  family = var.name
+  family                   = var.name
+  network_mode             = var.fargate ? "awsvpc" : "bridge"
+  requires_compatibilities = var.fargate ? ["FARGATE"] : ["EC2"]
+  execution_role_arn       = aws_iam_role.task_execution.arn
+  task_role_arn            = aws_iam_role.task_role.arn
 
   container_definitions = jsonencode(
     [
@@ -55,32 +74,36 @@ resource "aws_ecs_task_definition" "this" {
         ],
 
         environment = [
-          for k, v in var.container.envs :
+          for k, v in var.envs :
           {
             name  = k
             value = v
           }
         ],
 
+        secrets = local.secrets,
+
         logConfiguration = {
           logDriver = "awslogs",
           options = {
             awslogs-group  = aws_cloudwatch_log_group.this.name,
-            awslogs-region = data.aws_region.current.name,
+            awslogs-region = data.aws_region.this.name,
           },
         },
       }, length(var.command) == 0 ? {} : local.container_definition_overrides) # merge only if command not empty
   ])
 
-  execution_role_arn = aws_iam_role.task_execution.arn
-  task_role_arn = aws_iam_role.task_role.arn
   tags = var.tags
 }
 
 resource "aws_ecs_task_definition" "one_off" {
   for_each = var.one_off_commands
 
-  family = "${var.name}-${each.key}"
+  family                   = "${var.name}-${each.key}"
+  network_mode             = var.fargate ? "awsvpc" : "bridge"
+  requires_compatibilities = var.fargate ? ["FARGATE"] : ["EC2"]
+  execution_role_arn       = aws_iam_role.task_execution.arn
+  task_role_arn            = aws_iam_role.task_role.arn
 
   container_definitions = jsonencode(
     [
@@ -97,18 +120,20 @@ resource "aws_ecs_task_definition" "one_off" {
         portMappings      = [],
 
         environment = [
-          for k, v in var.container.envs :
+          for k, v in var.envs :
           {
             name  = k
             value = v
           }
         ],
 
+        secrets = local.secrets,
+
         logConfiguration = {
           logDriver = "awslogs",
           options = {
             awslogs-group  = aws_cloudwatch_log_group.one_off[each.key].name,
-            awslogs-region = data.aws_region.current.name,
+            awslogs-region = data.aws_region.this.name,
           },
         },
       }
@@ -126,6 +151,8 @@ resource "aws_ecs_service" "this" {
   name            = var.name
   cluster         = var.ecs_cluster_id
   task_definition = local.task_definition
+
+  launch_type = var.fargate ? "FARGATE" : "EC2"
 
   load_balancer {
     target_group_arn = aws_alb_target_group.this.arn
@@ -187,13 +214,40 @@ resource "aws_iam_role" "task_execution" {
   tags = var.tags
 }
 
-resource "aws_iam_role_policy" "task" {
-  name   = "${random_id.prefix.hex}-ecs-task"
+resource "aws_iam_role_policy" "task_execution" {
+  name   = "${random_id.prefix.hex}-task-execution"
   role   = aws_iam_role.task_execution.name
-  policy = data.aws_iam_policy_document.task.json
+  policy = data.aws_iam_policy_document.task_execution.json
 }
 
-data "aws_iam_policy_document" "task" {
+resource "aws_iam_role_policy" "ssm_get" {
+  name   = "${random_id.prefix.hex}-ssm-get"
+  role   = aws_iam_role.task_execution.name
+  policy = data.aws_iam_policy_document.task_execution_ssm_get.json
+}
+
+data "aws_iam_policy_document" "task_execution_ssm_get" {
+  statement {
+    sid    = "GetSSMParams"
+    effect = "Allow"
+    actions = [
+      "ssm:GetParameters",
+    ]
+
+    resources = [
+      for secret in var.secrets :
+      "arn:aws:ssm:${data.aws_region.this.name}:${data.aws_caller_identity.this.account_id}:parameter${secret}/*"
+    ]
+  }
+}
+
+data "aws_ssm_parameters_by_path" "secrets" {
+  for_each = var.secrets
+
+  path = each.value
+}
+
+data "aws_iam_policy_document" "task_execution" {
   statement {
     sid    = "Task"
     effect = "Allow"
@@ -201,7 +255,7 @@ data "aws_iam_policy_document" "task" {
       "ecr:GetAuthorizationToken",
       "ecr:BatchCheckLayerAvailability",
       "ecr:GetDownloadUrlForLayer",
-      "ecr:BatchGetImage"
+      "ecr:BatchGetImage",
     ]
 
     resources = ["*"]

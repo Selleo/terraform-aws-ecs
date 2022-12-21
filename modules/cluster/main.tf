@@ -11,7 +11,7 @@ resource "aws_launch_template" "this" {
   name_prefix   = "${random_id.prefix.hex}-"
   image_id      = local.ami
   instance_type = var.instance_type
-  key_name      = var.key_name
+  key_name      = aws_key_pair.this.key_name
 
   block_device_mappings {
     device_name = "/dev/xvda"
@@ -21,10 +21,12 @@ resource "aws_launch_template" "this" {
       volume_size = var.root_block_configuration.volume_size
     }
   }
+
   network_interfaces {
     associate_public_ip_address = var.associate_public_ip_address
     security_groups             = concat([aws_security_group.instance_sg.id], var.security_groups)
   }
+
   iam_instance_profile {
     name = aws_iam_instance_profile.instance_profile.name
   }
@@ -81,12 +83,6 @@ resource "aws_autoscaling_group" "this" {
 
   tag {
     key                 = var.ssm_tag_key
-    value               = var.ssm_tag_value
-    propagate_at_launch = true
-  }
-
-  tag {
-    key                 = "ssm.group"
     value               = var.ssm_tag_value
     propagate_at_launch = true
   }
@@ -170,4 +166,26 @@ data "cloudinit_config" "this" {
       content_type = part.value["content_type"]
     }
   }
+}
+
+resource "tls_private_key" "this" {
+  algorithm = "RSA"
+  rsa_bits  = "4096"
+}
+
+resource "aws_key_pair" "this" {
+  key_name   = "${random_id.prefix.hex}-ssh"
+  public_key = tls_private_key.this.public_key_openssh
+}
+
+resource "aws_security_group_rule" "allow_ssh" {
+  count = var.allow_ssh ? 1 : 0
+
+  security_group_id = aws_security_group.instance_sg.id
+  type              = "ingress"
+  from_port         = 22
+  to_port           = 22
+  protocol          = "tcp"
+  cidr_blocks       = ["0.0.0.0/0"]
+  ipv6_cidr_blocks  = ["::/0"]
 }
