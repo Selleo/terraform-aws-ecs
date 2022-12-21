@@ -5,12 +5,17 @@ variable "vpc_id" {
   description = "VPC id."
 }
 
+variable "subnet_ids" {
+  type        = list(string)
+  description = "List of AWS subent IDs for service."
+}
+
 variable "name" {
   type        = string
   description = "ECS Service name."
 }
 
-variable "ecs_cluster_id" {
+variable "cluster_id" {
   type        = string
   description = "ECS Cluster id."
 }
@@ -39,6 +44,12 @@ variable "container" {
 
 variable "fargate" {
   description = "Whether to run in FARGATE mode (serverless)."
+  type        = bool
+  default     = false
+}
+
+variable "public_ip" {
+  description = "Assign public IP for ECS service."
   type        = bool
   default     = false
 }

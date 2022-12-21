@@ -24,6 +24,17 @@ locals {
       }
     ]
   ])
+
+  ordered_placement_strategy = [
+    {
+      type  = "spread"
+      field = "attribute:ecs.avaiability-zones"
+    },
+    {
+      type  = "spread"
+      field = "instanceId"
+    }
+  ]
 }
 
 resource "random_id" "prefix" {
@@ -54,6 +65,9 @@ resource "aws_ecs_task_definition" "this" {
   execution_role_arn       = aws_iam_role.task_execution.arn
   task_role_arn            = aws_iam_role.task_role.arn
 
+  cpu    = var.container.cpu_units
+  memory = var.container.mem_units
+
   container_definitions = jsonencode(
     [
       merge({
@@ -68,7 +82,7 @@ resource "aws_ecs_task_definition" "this" {
         portMappings = [
           {
             containerPort = var.container.port,
-            hostPort      = 0,
+            hostPort      = var.fargate ? var.container.port : 0,
             protocol      = "tcp",
           },
         ],
@@ -86,8 +100,9 @@ resource "aws_ecs_task_definition" "this" {
         logConfiguration = {
           logDriver = "awslogs",
           options = {
-            awslogs-group  = aws_cloudwatch_log_group.this.name,
-            awslogs-region = data.aws_region.this.name,
+            awslogs-group         = aws_cloudwatch_log_group.this.name,
+            awslogs-region        = data.aws_region.this.name,
+            awslogs-stream-prefix = "ecs",
           },
         },
       }, length(var.command) == 0 ? {} : local.container_definition_overrides) # merge only if command not empty
@@ -104,6 +119,9 @@ resource "aws_ecs_task_definition" "one_off" {
   requires_compatibilities = var.fargate ? ["FARGATE"] : ["EC2"]
   execution_role_arn       = aws_iam_role.task_execution.arn
   task_role_arn            = aws_iam_role.task_role.arn
+
+  cpu    = var.fargate ? var.container.cpu_units : null
+  memory = var.fargate ? var.container.mem_units : null
 
   container_definitions = jsonencode(
     [
@@ -132,8 +150,9 @@ resource "aws_ecs_task_definition" "one_off" {
         logConfiguration = {
           logDriver = "awslogs",
           options = {
-            awslogs-group  = aws_cloudwatch_log_group.one_off[each.key].name,
-            awslogs-region = data.aws_region.this.name,
+            awslogs-group         = aws_cloudwatch_log_group.one_off[each.key].name,
+            awslogs-region        = data.aws_region.this.name,
+            awslogs-stream-prefix = "ecs",
           },
         },
       }
@@ -147,9 +166,36 @@ data "aws_ecs_task_definition" "this" {
   depends_on      = [aws_ecs_task_definition.this]
 }
 
+resource "aws_security_group" "this" {
+  name   = "${random_id.prefix.hex}-ecs-tasks"
+  vpc_id = var.vpc_id
+}
+
+# needed by fargate
+resource "aws_security_group_rule" "egress" {
+  security_group_id = aws_security_group.this.id
+  type              = "egress"
+  from_port         = 0
+  to_port           = 0
+  protocol          = "-1"
+  cidr_blocks       = ["0.0.0.0/0"]
+  ipv6_cidr_blocks  = ["::/0"]
+}
+
+# needed by fargate
+resource "aws_security_group_rule" "ingress" {
+  security_group_id = aws_security_group.this.id
+  type              = "ingress"
+  from_port         = var.container.port
+  to_port           = var.container.port
+  protocol          = "tcp"
+  cidr_blocks       = ["0.0.0.0/0"]
+  ipv6_cidr_blocks  = ["::/0"]
+}
+
 resource "aws_ecs_service" "this" {
   name            = var.name
-  cluster         = var.ecs_cluster_id
+  cluster         = var.cluster_id
   task_definition = local.task_definition
 
   launch_type = var.fargate ? "FARGATE" : "EC2"
@@ -160,18 +206,23 @@ resource "aws_ecs_service" "this" {
     container_port   = var.container.port
   }
 
+  network_configuration {
+    security_groups  = [aws_security_group.this.id]
+    subnets          = var.subnet_ids
+    assign_public_ip = var.public_ip
+  }
+
   desired_count                      = var.desired_count
   deployment_minimum_healthy_percent = var.deployment_minimum_healthy_percent
   deployment_maximum_percent         = var.deployment_maximum_percent
 
-  ordered_placement_strategy {
-    type  = "spread"
-    field = "attribute:ecs.avaiability-zones"
-  }
+  dynamic "ordered_placement_strategy" {
+    for_each = var.fargate ? [] : local.ordered_placement_strategy
 
-  ordered_placement_strategy {
-    type  = "spread"
-    field = "instanceId"
+    content {
+      type  = each.type
+      field = each.field
+    }
   }
 
   tags = var.tags
@@ -308,6 +359,8 @@ resource "aws_alb_target_group" "this" {
   protocol             = "HTTP"
   vpc_id               = var.vpc_id
   deregistration_delay = 30 # draining time
+  # target_type          = var.fargate ? "ip" : "instance"
+  target_type = "ip"
 
   health_check {
     path                = var.health_check.path
