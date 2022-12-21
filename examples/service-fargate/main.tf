@@ -47,7 +47,7 @@ module "service" {
   subnet_ids    = module.vpc.public_subnets
   cluster_id    = module.cluster.id
   desired_count = 1
-  secrets       = ["/example/staging/api"]
+  secrets       = ["/example-fargate/staging/api"]
   fargate       = true
 
   container = {
@@ -83,7 +83,7 @@ module "secrets" {
     name      = "api"
   }
 
-  path = "/example/staging/api"
+  path = "/example-fargate/staging/api"
 
   secrets = {
     APP_ENV = "staging"

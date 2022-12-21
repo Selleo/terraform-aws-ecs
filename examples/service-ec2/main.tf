@@ -53,7 +53,7 @@ module "service" {
   subnet_ids    = module.vpc.public_subnets
   cluster_id    = module.cluster.id
   desired_count = 1
-  secrets       = ["/example/staging/api"]
+  secrets       = ["/example-ecs-ec2/staging/api"]
 
   container = {
     mem_reservation_units = 128
@@ -88,7 +88,7 @@ module "secrets" {
     name      = "api"
   }
 
-  path = "/example/staging/api"
+  path = "/example-ecs-ec2/staging/api"
 
   secrets = {
     APP_ENV = "staging"
