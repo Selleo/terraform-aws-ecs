@@ -5,12 +5,17 @@ variable "vpc_id" {
   description = "VPC id."
 }
 
+variable "subnet_ids" {
+  type        = list(string)
+  description = "List of AWS subent IDs for service."
+}
+
 variable "name" {
   type        = string
   description = "ECS Service name."
 }
 
-variable "ecs_cluster_id" {
+variable "cluster_id" {
   type        = string
   description = "ECS Cluster id."
 }

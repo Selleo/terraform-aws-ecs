@@ -1,7 +1,7 @@
 resource "random_id" "example" {
   byte_length = 4
 
-  prefix = "tf-example"
+  prefix = "fargate"
 }
 
 module "vpc" {
@@ -27,13 +27,6 @@ module "cluster" {
   subnet_ids           = module.vpc.public_subnets
   instance_type        = "t3.nano"
   lb_security_group_id = module.lb.security_group_id
-  allow_ssh = true
-
-  autoscaling_group = {
-    min_size         = 1
-    max_size         = 5
-    desired_capacity = 1
-  }
 }
 
 module "lb" {
@@ -49,21 +42,24 @@ module "lb" {
 module "service" {
   source = "../../modules/service"
 
-  name           = random_id.example.hex
-  vpc_id         = module.vpc.vpc_id
-  ecs_cluster_id = module.cluster.id
-  desired_count  = 1
+  name          = random_id.example.hex
+  vpc_id        = module.vpc.vpc_id
+  subnet_ids    = module.vpc.public_subnets
+  cluster_id    = module.cluster.id
+  desired_count = 1
+  secrets       = ["/example-fargate/staging/api"]
+  fargate       = true
 
   container = {
     mem_reservation_units = 128
     cpu_units             = 256
-    mem_units             = 256
+    mem_units             = 512
 
     image = "qbart/go-http-server-noop:latest",
     port  = 4000
   }
 
-  secrets = ["/example/staging/api"]
+  depends_on = [module.secrets]
 }
 
 resource "aws_alb_listener" "http" {
@@ -87,9 +83,13 @@ module "secrets" {
     name      = "api"
   }
 
-  path = "/example/staging/api"
+  path = "/example-fargate/staging/api"
 
   secrets = {
     APP_ENV = "staging"
   }
+}
+
+output "lb_dns" {
+  value = "http://${module.lb.dns_name}"
 }

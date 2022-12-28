@@ -35,9 +35,9 @@ variable "autoscaling_group" {
   })
   description = "Autoscaling group configuration."
   default = {
-    min_size         = 1
+    min_size         = 0
     max_size         = 5
-    desired_capacity = 2
+    desired_capacity = 0
   }
 }
 
