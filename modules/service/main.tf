@@ -362,16 +362,16 @@ resource "aws_alb_target_group" "this" {
   port                 = var.container.port
   protocol             = "HTTP"
   vpc_id               = var.vpc_id
-  deregistration_delay = 30 # draining time
+  deregistration_delay = var.deregistration_delay # draining time
   target_type          = var.fargate ? "ip" : "instance"
 
   health_check {
     path                = var.health_check.path
     protocol            = "HTTP"
-    timeout             = 10
-    interval            = 15
-    healthy_threshold   = 3
-    unhealthy_threshold = 3
+    timeout             = var.health_check_threshold.timeout
+    interval            = var.health_check_threshold.interval
+    healthy_threshold   = var.health_check_threshold.healthy
+    unhealthy_threshold = var.health_check_threshold.unhealthy
     matcher             = var.health_check.matcher
   }
 

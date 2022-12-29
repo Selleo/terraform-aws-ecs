@@ -90,6 +90,29 @@ variable "health_check" {
   }
 }
 
+variable "health_check_threshold" {
+  type = object({
+    timeout   = number
+    interval  = number
+    healthy   = number
+    unhealthy = number
+  })
+  description = "Health check thresholds for ALB target group."
+  default = {
+    timeout   = 10
+    interval  = 15
+    healthy   = 3
+    unhealthy = 3
+  }
+}
+
+variable "deregistration_delay" {
+  description = "Deregistration delay (draining time) from LB."
+
+  type    = number
+  default = 30
+}
+
 variable "deployment_minimum_healthy_percent" {
   description = "Lower limit (as a percentage of the service's desiredCount) of the number of running tasks that must remain running and healthy in a service during a deployment."
 
