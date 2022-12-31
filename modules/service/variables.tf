@@ -1,5 +1,15 @@
 # required
 
+variable "context" {
+  description = "Project context."
+
+  type = object({
+    namespace = string
+    stage     = string
+    name      = string
+  })
+}
+
 variable "vpc_id" {
   type        = string
   description = "VPC id."

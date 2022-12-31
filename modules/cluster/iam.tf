@@ -2,7 +2,7 @@ resource "aws_iam_role" "instance_role" {
   name               = "${random_id.prefix.hex}-cluster-instance"
   assume_role_policy = data.aws_iam_policy_document.instance_role.json
 
-  tags = var.tags
+  tags = merge(local.tags, { "resource.group" = "identity" })
 }
 
 data "aws_iam_policy_document" "instance_role" {

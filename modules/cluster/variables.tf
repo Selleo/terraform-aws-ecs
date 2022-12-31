@@ -1,5 +1,15 @@
 # required
 
+variable "context" {
+  description = "Project context."
+
+  type = object({
+    namespace = string
+    stage     = string
+    name      = string
+  })
+}
+
 variable "name_prefix" {
   type        = string
   description = "Name prefix (hyphen suffix should be skipped)."

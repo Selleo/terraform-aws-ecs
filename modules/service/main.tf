@@ -2,6 +2,14 @@ data "aws_region" "this" {}
 data "aws_caller_identity" "this" {}
 
 locals {
+  tags = merge({
+    "terraform.module"    = "Selleo/terraform-aws-ecs"
+    "terraform.submodule" = "service"
+    "context.namespace"   = var.context.namespace
+    "context.stage"       = var.context.stage
+    "context.name"        = var.context.name
+  }, var.tags)
+
   task_definition = "${aws_ecs_task_definition.this.family}:${max(
     aws_ecs_task_definition.this.revision,
     data.aws_ecs_task_definition.this.revision,
@@ -46,7 +54,7 @@ resource "aws_cloudwatch_log_group" "this" {
   name              = var.name
   retention_in_days = var.log_retention_in_days
 
-  tags = var.tags
+  tags = merge(local.tags, { "resource.group" = "log" })
 }
 
 resource "aws_cloudwatch_log_group" "one_off" {
@@ -55,7 +63,7 @@ resource "aws_cloudwatch_log_group" "one_off" {
   name              = "${var.name}-${each.key}"
   retention_in_days = var.log_retention_in_days
 
-  tags = var.tags
+  tags = merge(local.tags, { "resource.group" = "log" })
 }
 
 resource "aws_ecs_task_definition" "this" {
@@ -108,7 +116,7 @@ resource "aws_ecs_task_definition" "this" {
       }, length(var.command) == 0 ? {} : local.container_definition_overrides) # merge only if command not empty
   ])
 
-  tags = var.tags
+  tags = merge(local.tags, { "resource.group" = "compute" })
 }
 
 resource "aws_ecs_task_definition" "one_off" {
@@ -158,7 +166,7 @@ resource "aws_ecs_task_definition" "one_off" {
       }
   ])
 
-  tags = var.tags
+  tags = merge(local.tags, { "resource.group" = "compute" })
 }
 
 data "aws_ecs_task_definition" "this" {
@@ -169,6 +177,8 @@ data "aws_ecs_task_definition" "this" {
 resource "aws_security_group" "this" {
   name   = "${random_id.prefix.hex}-ecs-tasks"
   vpc_id = var.vpc_id
+
+  tags = merge(local.tags, { "resource.group" = "network" })
 }
 
 # needed by fargate
@@ -229,7 +239,7 @@ resource "aws_ecs_service" "this" {
     }
   }
 
-  tags = var.tags
+  tags = merge(local.tags, { "resource.group" = "compute" })
 }
 
 resource "aws_iam_role" "task_role" {
@@ -247,7 +257,7 @@ resource "aws_iam_role" "task_role" {
     ]
   })
 
-  tags = var.tags
+  tags = merge(local.tags, { "resource.group" = "identity" })
 }
 
 
@@ -266,7 +276,7 @@ resource "aws_iam_role" "task_execution" {
     ]
   })
 
-  tags = var.tags
+  tags = merge(local.tags, { "resource.group" = "identity" })
 }
 
 resource "aws_iam_role_policy" "task_execution" {
@@ -375,5 +385,5 @@ resource "aws_alb_target_group" "this" {
     matcher             = var.health_check.matcher
   }
 
-  tags = var.tags
+  tags = merge(local.tags, { "resource.group" = "network" })
 }
