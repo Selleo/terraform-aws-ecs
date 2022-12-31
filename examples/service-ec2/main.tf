@@ -22,6 +22,12 @@ module "vpc" {
 module "cluster" {
   source = "../../modules/cluster"
 
+  context = {
+    namespace = "selleo"
+    stage     = "dev"
+    name      = "example"
+  }
+
   name_prefix          = random_id.example.hex
   vpc_id               = module.vpc.vpc_id
   subnet_ids           = module.vpc.public_subnets
@@ -47,6 +53,12 @@ module "lb" {
 
 module "service" {
   source = "../../modules/service"
+
+  context = {
+    namespace = "selleo"
+    stage     = "dev"
+    name      = "example"
+  }
 
   name          = random_id.example.hex
   vpc_id        = module.vpc.vpc_id

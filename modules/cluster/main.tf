@@ -1,5 +1,13 @@
 locals {
   ami = var.ami == "" ? data.aws_ami.ecs_optimized.id : var.ami
+
+  tags = merge({
+    "terraform.module"    = "Selleo/terraform-aws-ecs"
+    "terraform.submodule" = "cluster"
+    "context.namespace"   = var.context.namespace
+    "context.stage"       = var.context.stage
+    "context.name"        = var.context.name
+  }, var.tags)
 }
 
 resource "random_id" "prefix" {
@@ -42,7 +50,7 @@ resource "aws_ecs_cluster" "this" {
     value = var.enable_container_insights ? "enabled" : "disabled"
   }
 
-  tags = var.tags
+  tags = merge(local.tags, { "resource.group" = "compute" })
 }
 
 resource "aws_placement_group" "this" {
@@ -50,7 +58,7 @@ resource "aws_placement_group" "this" {
   strategy     = var.placement_group.strategy # https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/placement-groups.html
   spread_level = var.placement_group.spread_level
 
-  tags = var.tags
+  tags = merge(local.tags, { "resource.group" = "compute" })
 }
 
 resource "aws_autoscaling_group" "this" {
@@ -88,7 +96,7 @@ resource "aws_autoscaling_group" "this" {
   }
 
   dynamic "tag" {
-    for_each = var.tags
+    for_each = merge(local.tags, { "resource.group" = "compute" })
     content {
       key                 = tag.key
       value               = tag.value
@@ -109,7 +117,7 @@ resource "aws_security_group" "instance_sg" {
   vpc_id      = var.vpc_id
   name        = "${random_id.prefix.hex}-instance"
 
-  tags = var.tags
+  tags = merge(local.tags, { "resource.group" = "network" })
 }
 
 resource "aws_security_group_rule" "ephemeral_port_range" {
@@ -176,6 +184,8 @@ resource "tls_private_key" "this" {
 resource "aws_key_pair" "this" {
   key_name   = "${random_id.prefix.hex}-ssh"
   public_key = tls_private_key.this.public_key_openssh
+
+  tags = merge(local.tags, { "resource.group" = "keys" })
 }
 
 resource "aws_security_group_rule" "allow_ssh" {
