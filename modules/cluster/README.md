@@ -52,6 +52,7 @@
 | <a name="input_autoscaling_group"></a> [autoscaling\_group](#input\_autoscaling\_group) | Autoscaling group configuration. | <pre>object({<br>    min_size         = number<br>    max_size         = number<br>    desired_capacity = number<br>  })</pre> | <pre>{<br>  "desired_capacity": 0,<br>  "max_size": 5,<br>  "min_size": 0<br>}</pre> | no |
 | <a name="input_cloudinit_parts"></a> [cloudinit\_parts](#input\_cloudinit\_parts) | Parts for cloud-init config that are added to the final MIME document. | <pre>list(object({<br>    content      = string<br>    filename     = string<br>    content_type = string<br>  }))</pre> | `[]` | no |
 | <a name="input_cloudinit_scripts"></a> [cloudinit\_scripts](#input\_cloudinit\_scripts) | Shell scripts added to cloud-init. | `list(string)` | `[]` | no |
+| <a name="input_context"></a> [context](#input\_context) | Project context. | <pre>object({<br>    namespace = string<br>    stage     = string<br>    name      = string<br>  })</pre> | n/a | yes |
 | <a name="input_ecs_loglevel"></a> [ecs\_loglevel](#input\_ecs\_loglevel) | ECS Cluster log level. | `string` | `"info"` | no |
 | <a name="input_enable_container_insights"></a> [enable\_container\_insights](#input\_enable\_container\_insights) | Enable container insights for the cluster. | `bool` | `false` | no |
 | <a name="input_instance_type"></a> [instance\_type](#input\_instance\_type) | EC2 instance type i.e. t3.medium. | `string` | n/a | yes |
