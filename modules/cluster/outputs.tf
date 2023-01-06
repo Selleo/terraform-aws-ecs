@@ -30,3 +30,9 @@ output "key_name" {
   description = "Key pair name for SSH access."
   value       = aws_key_pair.this.key_name
 }
+
+output "private_key_pem" {
+  description = "Private key in PEM format."
+  value       = tls_private_key.this.private_key_pem
+  sensitive   = true
+}
