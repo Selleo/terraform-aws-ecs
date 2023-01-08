@@ -279,6 +279,24 @@ resource "aws_iam_role" "task_execution" {
   tags = merge(local.tags, { "resource.group" = "identity" })
 }
 
+resource "aws_iam_policy" "pass_role" {
+  name   = "${random_id.prefix.hex}-pass-role"
+  policy = data.aws_iam_policy_document.pass_role.json
+
+  tags = merge(local.tags, { "resource.group" = "identity" })
+}
+
+data "aws_iam_policy_document" "pass_role" {
+  statement {
+    actions = ["iam:PassRole", "iam:GetRole"]
+
+    resources = [
+      aws_iam_role.task_role.arn,
+      aws_iam_role.task_execution.arn
+    ]
+  }
+}
+
 resource "aws_iam_role_policy" "task_execution" {
   name   = "${random_id.prefix.hex}-task-execution"
   role   = aws_iam_role.task_execution.name

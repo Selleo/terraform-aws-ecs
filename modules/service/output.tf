@@ -19,6 +19,16 @@ output "task_family" {
 }
 
 output "task_role_id" {
-  value = aws_iam_role.task_role.id
+  value       = aws_iam_role.task_role.id
   description = "ECS task role ID"
+}
+
+output "task_execution_role_id" {
+  value       = aws_iam_role.task_execution.id
+  description = "ECS task role ID"
+}
+
+output "deployment_policy_id" {
+  value       = aws_iam_policy.pass_role.id
+  description = "Policy for ECS deployment"
 }
