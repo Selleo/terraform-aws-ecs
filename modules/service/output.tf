@@ -25,10 +25,15 @@ output "task_role_id" {
 
 output "task_execution_role_id" {
   value       = aws_iam_role.task_execution.id
-  description = "ECS task role ID"
+  description = "ECS task execution role ID"
 }
 
-output "deployment_policy_id" {
-  value       = aws_iam_policy.pass_role.id
-  description = "Policy for ECS deployment"
+output "deployment_group" {
+  value       = aws_iam_group.deployment.name
+  description = "Deployment group name"
+}
+
+output "deployment_group_arn" {
+  value       = aws_iam_group.deployment.arn
+  description = "Deployment group ARN"
 }
