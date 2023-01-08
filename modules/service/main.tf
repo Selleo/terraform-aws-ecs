@@ -279,24 +279,6 @@ resource "aws_iam_role" "task_execution" {
   tags = merge(local.tags, { "resource.group" = "identity" })
 }
 
-resource "aws_iam_policy" "pass_role" {
-  name   = "${random_id.prefix.hex}-pass-role"
-  policy = data.aws_iam_policy_document.pass_role.json
-
-  tags = merge(local.tags, { "resource.group" = "identity" })
-}
-
-data "aws_iam_policy_document" "pass_role" {
-  statement {
-    actions = ["iam:PassRole", "iam:GetRole"]
-
-    resources = [
-      aws_iam_role.task_role.arn,
-      aws_iam_role.task_execution.arn
-    ]
-  }
-}
-
 resource "aws_iam_role_policy" "task_execution" {
   name   = "${random_id.prefix.hex}-task-execution"
   role   = aws_iam_role.task_execution.name
@@ -404,4 +386,63 @@ resource "aws_alb_target_group" "this" {
   }
 
   tags = merge(local.tags, { "resource.group" = "network" })
+}
+
+# deployment group that can be attached to user deployer
+
+resource "aws_iam_group" "deployment" {
+  name = "${random_id.prefix.hex}-deployment"
+}
+
+resource "aws_iam_group_policy_attachment" "pass_role" {
+  group      = aws_iam_group.deployment.name
+  policy_arn = aws_iam_policy.pass_role.arn
+}
+
+resource "aws_iam_group_policy_attachment" "run_one_off_task" {
+  for_each = var.one_off_commands
+
+  group      = aws_iam_group.deployment.name
+  policy_arn = aws_iam_policy.deployment_run_one_off_task[each.key].arn
+}
+
+# policy for registering new task (IAM needs to pass role to task/execution role)
+
+resource "aws_iam_policy" "pass_role" {
+  name   = "${random_id.prefix.hex}-pass-role"
+  policy = data.aws_iam_policy_document.pass_role.json
+
+  tags = merge(local.tags, { "resource.group" = "identity" })
+}
+
+data "aws_iam_policy_document" "pass_role" {
+  statement {
+    actions = ["iam:PassRole", "iam:GetRole"]
+
+    resources = [
+      aws_iam_role.task_role.arn,
+      aws_iam_role.task_execution.arn
+    ]
+  }
+}
+
+# policy for starting new one off task
+
+resource "aws_iam_policy" "deployment_run_one_off_task" {
+  for_each = var.one_off_commands
+
+  name   = "${random_id.prefix.hex}-one-off-run-${each.key}"
+  policy = data.aws_iam_policy_document.run_task[each.key].json
+}
+
+data "aws_iam_policy_document" "run_task" {
+  for_each = var.one_off_commands
+
+  statement {
+    actions = ["ecs:RunTask"]
+
+    resources = [
+      "arn:aws:ecs:${data.aws_region.this.id}:${data.aws_caller_identity.this.id}:task-definition/${var.name}-${each.key}"
+    ]
+  }
 }
