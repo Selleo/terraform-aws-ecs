@@ -36,3 +36,13 @@ output "private_key_pem" {
   value       = tls_private_key.this.private_key_pem
   sensitive   = true
 }
+
+output "deployment_group" {
+  value       = aws_iam_group.deployment.name
+  description = "Deployment group name"
+}
+
+output "deployment_group_arn" {
+  value       = aws_iam_group.deployment.arn
+  description = "Deployment group ARN"
+}
