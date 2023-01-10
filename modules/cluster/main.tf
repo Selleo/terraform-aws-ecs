@@ -199,3 +199,35 @@ resource "aws_security_group_rule" "allow_ssh" {
   cidr_blocks       = ["0.0.0.0/0"]
   ipv6_cidr_blocks  = ["::/0"]
 }
+
+resource "aws_iam_group" "deployment" {
+  name = "${random_id.prefix.hex}-deployment"
+}
+
+resource "aws_iam_group_policy_attachment" "deployment" {
+  group      = aws_iam_group.deployment.name
+  policy_arn = aws_iam_policy.deployment.arn
+}
+
+resource "aws_iam_policy" "deployment" {
+  name   = "${random_id.prefix.hex}-cluster-deployment"
+  policy = data.aws_iam_policy_document.deployment.json
+}
+
+data "aws_iam_policy_document" "deployment" {
+  statement {
+    actions = ["ecs:DescribeTasks"]
+
+    resources = [
+      "*"
+    ]
+    condition {
+      test     = "ArnEquals"
+      variable = "ecs:cluster"
+
+      values = [
+        aws_ecs_cluster.this.arn,
+      ]
+    }
+  }
+}
