@@ -394,6 +394,11 @@ resource "aws_iam_group" "deployment" {
   name = "${random_id.prefix.hex}-deployment"
 }
 
+resource "aws_iam_group_policy_attachment" "update_service" {
+  group      = aws_iam_group.deployment.name
+  policy_arn = aws_iam_policy.update_service.arn
+}
+
 resource "aws_iam_group_policy_attachment" "pass_role" {
   group      = aws_iam_group.deployment.name
   policy_arn = aws_iam_policy.pass_role.arn
@@ -404,6 +409,35 @@ resource "aws_iam_group_policy_attachment" "run_one_off_task" {
 
   group      = aws_iam_group.deployment.name
   policy_arn = aws_iam_policy.deployment_run_one_off_task[each.key].arn
+}
+
+# policy for updating service
+
+resource "aws_iam_policy" "update_service" {
+  name   = "${random_id.prefix.hex}-update-service"
+  policy = data.aws_iam_policy_document.update_service.json
+
+  tags = merge(local.tags, { "resource.group" = "identity" })
+}
+
+data "aws_iam_policy_document" "update_service" {
+  statement {
+    actions = [
+      "ecs:DescribeTaskDefinition",
+      "ecs:RegisterTaskDefinition",
+    ]
+
+    resources = ["*"]
+  }
+
+  statement {
+    actions = [
+      "ecs:DescribeServices",
+      "ecs:UpdateService",
+    ]
+
+    resources = [aws_ecs_service.this.id]
+  }
 }
 
 # policy for registering new task (IAM needs to pass role to task/execution role)
