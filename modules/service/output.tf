@@ -3,6 +3,11 @@ output "lb_target_group_id" {
   description = "ARN of the Target Group."
 }
 
+output "name" {
+  value       = var.name
+  description = "Service name."
+}
+
 output "service_id" {
   value       = aws_ecs_service.this.id
   description = "ARN that identifies the service."
