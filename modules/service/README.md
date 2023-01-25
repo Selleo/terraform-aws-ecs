@@ -150,6 +150,7 @@ No modules.
 | <a name="output_deployment_group"></a> [deployment\_group](#output\_deployment\_group) | Deployment group name |
 | <a name="output_deployment_group_arn"></a> [deployment\_group\_arn](#output\_deployment\_group\_arn) | Deployment group ARN |
 | <a name="output_lb_target_group_id"></a> [lb\_target\_group\_id](#output\_lb\_target\_group\_id) | ARN of the Target Group. |
+| <a name="output_name"></a> [name](#output\_name) | Service name. |
 | <a name="output_service_id"></a> [service\_id](#output\_service\_id) | ARN that identifies the service. |
 | <a name="output_task_definition"></a> [task\_definition](#output\_task\_definition) | Latest task definition (family:revision). |
 | <a name="output_task_execution_role_id"></a> [task\_execution\_role\_id](#output\_task\_execution\_role\_id) | ECS task execution role ID |

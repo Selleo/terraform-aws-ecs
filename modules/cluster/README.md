@@ -83,6 +83,7 @@
 | <a name="output_instance_role"></a> [instance\_role](#output\_instance\_role) | IAM role that is attached to EC2 instances. |
 | <a name="output_instance_security_group_id"></a> [instance\_security\_group\_id](#output\_instance\_security\_group\_id) | ID of the security group attached to an instance. |
 | <a name="output_key_name"></a> [key\_name](#output\_key\_name) | Key pair name for SSH access. |
+| <a name="output_name"></a> [name](#output\_name) | ECS cluster name. |
 | <a name="output_prefix"></a> [prefix](#output\_prefix) | Random prefix to use for associated resources. |
 | <a name="output_private_key_pem"></a> [private\_key\_pem](#output\_private\_key\_pem) | Private key in PEM format. |
 <!-- END_TF_DOCS -->
