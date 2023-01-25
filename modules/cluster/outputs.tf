@@ -3,6 +3,11 @@ output "id" {
   description = "ECS cluster ID (contains randomized suffix)."
 }
 
+output "name" {
+  value       = aws_ecs_cluster.this.name
+  description = "ECS cluster name."
+}
+
 output "instance_role" {
   value       = aws_iam_role.instance_role.id
   description = "IAM role that is attached to EC2 instances."
