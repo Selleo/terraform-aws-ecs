@@ -368,7 +368,7 @@ data "aws_iam_policy_document" "cloudwatch_one_off" {
 }
 
 resource "aws_alb_target_group" "this" {
-  name                 = var.name
+  name                 = random_id.prefix.hex
   port                 = var.container.port
   protocol             = "HTTP"
   vpc_id               = var.vpc_id
