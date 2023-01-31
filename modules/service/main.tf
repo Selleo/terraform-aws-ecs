@@ -51,7 +51,7 @@ resource "random_id" "prefix" {
 }
 
 resource "aws_cloudwatch_log_group" "this" {
-  name              = var.name
+  name              = "${var.context.namespace}/${var.context.stage}/${var.context.name}/ecs/${var.name}"
   retention_in_days = var.log_retention_in_days
 
   tags = merge(local.tags, { "resource.group" = "log" })
@@ -60,7 +60,7 @@ resource "aws_cloudwatch_log_group" "this" {
 resource "aws_cloudwatch_log_group" "one_off" {
   for_each = var.one_off_commands
 
-  name              = "${var.name}-${each.key}"
+  name              = "${var.context.namespace}/${var.context.stage}/${var.context.name}/ecs/${var.name}-${each.key}"
   retention_in_days = var.log_retention_in_days
 
   tags = merge(local.tags, { "resource.group" = "log" })
