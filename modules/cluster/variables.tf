@@ -106,7 +106,7 @@ variable "cloudinit_scripts" {
 variable "enable_container_insights" {
   type        = bool
   description = "Enable container insights for the cluster."
-  default     = false
+  default     = true
 }
 
 variable "ecs_loglevel" {
@@ -155,4 +155,12 @@ variable "allow_ssh" {
   description = "Allow SSH port in SG."
   type        = bool
   default     = false
+}
+
+variable "efs" {
+  type = object({
+    arn = string
+  })
+  description = "EFS volume to mount to ECS"
+  default     = null
 }

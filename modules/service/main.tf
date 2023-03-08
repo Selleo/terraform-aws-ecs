@@ -85,8 +85,14 @@ resource "aws_ecs_task_definition" "this" {
         cpu               = var.container.cpu_units,
         name              = var.name,
         image             = var.container.image,
-        mountPoints       = [],
-        volumesFrom       = [],
+        mountPoints = var.efs == null ? [] : [
+          {
+            sourceVolume  = var.efs.volume
+            containerPath = var.efs.mount_path
+            readOnly      = false
+          }
+        ],
+        volumesFrom = [],
         portMappings = [
           {
             containerPort = var.container.port,
@@ -116,6 +122,21 @@ resource "aws_ecs_task_definition" "this" {
       }, length(var.command) == 0 ? {} : local.container_definition_overrides) # merge only if command not empty
   ])
 
+  dynamic "volume" {
+    for_each = var.efs == null ? [] : [var.efs.volume]
+
+    content {
+      name = var.efs.volume
+
+      efs_volume_configuration {
+        file_system_id = var.efs.id
+        root_directory = "/"
+        # transit_encryption      = "ENABLED"
+        # transit_encryption_port = 2999
+      }
+    }
+  }
+
   tags = merge(local.tags, { "resource.group" = "compute" })
 }
 
@@ -141,9 +162,15 @@ resource "aws_ecs_task_definition" "one_off" {
         cpu               = var.container.cpu_units,
         name              = var.name,
         image             = var.container.image,
-        mountPoints       = [],
-        volumesFrom       = [],
-        portMappings      = [],
+        mountPoints = var.efs == null ? [] : [
+          {
+            sourceVolume  = var.efs.volume
+            containerPath = var.efs.mount_path
+            readOnly      = false
+          }
+        ],
+        volumesFrom  = [],
+        portMappings = [],
 
         environment = [
           for k, v in var.envs :
@@ -166,6 +193,21 @@ resource "aws_ecs_task_definition" "one_off" {
       }
   ])
 
+  dynamic "volume" {
+    for_each = var.efs == null ? [] : [var.efs.volume]
+
+    content {
+      name = var.efs.volume
+
+      efs_volume_configuration {
+        file_system_id = var.efs.id
+        root_directory = "/"
+        # transit_encryption      = "ENABLED"
+        # transit_encryption_port = 2999
+      }
+    }
+  }
+
   tags = merge(local.tags, { "resource.group" = "compute" })
 }
 
@@ -181,8 +223,11 @@ resource "aws_security_group" "this" {
   tags = merge(local.tags, { "resource.group" = "network" })
 }
 
+
 # needed by fargate
 resource "aws_security_group_rule" "egress" {
+  count = var.fargate ? 1 : 0
+
   security_group_id = aws_security_group.this.id
   type              = "egress"
   from_port         = 0
@@ -194,6 +239,8 @@ resource "aws_security_group_rule" "egress" {
 
 # needed by fargate
 resource "aws_security_group_rule" "ingress" {
+  count = var.fargate ? 1 : 0
+
   security_group_id = aws_security_group.this.id
   type              = "ingress"
   from_port         = var.container.port

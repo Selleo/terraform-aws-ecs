@@ -121,6 +121,7 @@ resource "aws_security_group" "instance_sg" {
 }
 
 resource "aws_security_group_rule" "ephemeral_port_range" {
+  description              = "Allow dynamic port mapping for ECS"
   type                     = "ingress"
   from_port                = 32768
   to_port                  = 65535
@@ -130,6 +131,7 @@ resource "aws_security_group_rule" "ephemeral_port_range" {
 }
 
 resource "aws_security_group_rule" "allow_all_outbound_ec2_instance" {
+  description       = "Allow outgoing traffic"
   type              = "egress"
   from_port         = 0
   to_port           = 0
@@ -137,6 +139,42 @@ resource "aws_security_group_rule" "allow_all_outbound_ec2_instance" {
   cidr_blocks       = ["0.0.0.0/0"]
   security_group_id = aws_security_group.instance_sg.id
 }
+
+resource "aws_iam_role_policy" "efs" {
+  count = var.efs == null ? 0 : 1
+
+  name   = "${random_id.prefix.hex}-efs"
+  role   = aws_iam_role.instance_role.name
+  policy = data.aws_iam_policy_document.efs[count.index].json
+}
+
+data "aws_iam_policy_document" "efs" {
+  count = var.efs == null ? 0 : 1
+
+  statement {
+    effect = "Allow"
+    actions = [
+      "elasticfilesystem:DescribeMountTargets",
+      "elasticfilesystem:DescribeAccessPoints",
+      "elasticfilesystem:DescribeFileSystems",
+      "elasticfilesystem:DescribeTags",
+    ]
+
+    resources = [
+      var.efs.arn
+    ]
+  }
+
+  statement {
+    effect = "Allow"
+    actions = [
+      "ec2:DescribeAvailabilityZones",
+    ]
+
+    resources = ["*"]
+  }
+}
+
 
 data "cloudinit_config" "this" {
   gzip          = true
@@ -155,6 +193,19 @@ data "cloudinit_config" "this" {
         }))
       }
     )
+  }
+
+  dynamic "part" {
+    for_each = var.efs == null ? [] : ["efs"]
+
+    content {
+      filename     = "efs.sh"
+      content      = <<SHELL
+      #!/bin/sh
+      pip3 install botocore
+      SHELL
+      content_type = "text/x-shellscript"
+    }
   }
 
   dynamic "part" {
