@@ -142,3 +142,13 @@ variable "log_retention_in_days" {
   description = "Log retention in days for Cloudwatch."
   default     = 365
 }
+
+variable "efs" {
+  type = object({
+    id         = string
+    mount_path = string
+    volume     = string
+  })
+  description = "EFS volume to mount to ECS"
+  default     = null
+}
