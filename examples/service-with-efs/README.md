@@ -21,6 +21,7 @@
 |------|--------|---------|
 | <a name="module_cluster"></a> [cluster](#module\_cluster) | ../../modules/cluster | n/a |
 | <a name="module_config_secrets"></a> [config\_secrets](#module\_config\_secrets) | Selleo/ssm/aws//modules/parameters | 0.2.0 |
+| <a name="module_efs"></a> [efs](#module\_efs) | Selleo/efs/aws//modules/volume | 0.1.0 |
 | <a name="module_lb"></a> [lb](#module\_lb) | Selleo/backend/aws//modules/load-balancer | 0.23.0 |
 | <a name="module_secrets"></a> [secrets](#module\_secrets) | Selleo/ssm/aws//modules/parameters | 0.2.0 |
 | <a name="module_service"></a> [service](#module\_service) | ../../modules/service | n/a |
@@ -31,11 +32,6 @@
 | Name | Type |
 |------|------|
 | [aws_alb_listener.http](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/alb_listener) | resource |
-| [aws_efs_file_system.this](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/efs_file_system) | resource |
-| [aws_efs_mount_target.target1](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/efs_mount_target) | resource |
-| [aws_efs_mount_target.target2](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/efs_mount_target) | resource |
-| [aws_security_group.efs](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/security_group) | resource |
-| [aws_security_group_rule.efs_allow_ec2](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/security_group_rule) | resource |
 | [random_id.example](https://registry.terraform.io/providers/hashicorp/random/latest/docs/resources/id) | resource |
 
 ## Outputs
