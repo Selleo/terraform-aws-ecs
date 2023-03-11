@@ -73,18 +73,18 @@ resource "aws_ecs_task_definition" "this" {
   execution_role_arn       = aws_iam_role.task_execution.arn
   task_role_arn            = aws_iam_role.task_role.arn
 
-  cpu    = var.container.cpu_units
-  memory = var.container.mem_units
+  cpu    = var.limits.cpu
+  memory = var.limits.mem_max
 
   container_definitions = jsonencode(
     [
       merge({
         essential         = true,
-        memoryReservation = var.container.mem_reservation_units,
-        memory            = var.container.mem_units,
-        cpu               = var.container.cpu_units,
+        memoryReservation = var.limits.mem_min,
+        memory            = var.limits.mem_max,
+        cpu               = var.limits.cpu,
         name              = var.name,
-        image             = var.container.image,
+        image             = var.image,
         mountPoints = var.efs == null ? [] : [
           {
             sourceVolume  = var.efs.volume
@@ -95,8 +95,8 @@ resource "aws_ecs_task_definition" "this" {
         volumesFrom = [],
         portMappings = [
           {
-            containerPort = var.container.port,
-            hostPort      = var.fargate ? var.container.port : 0,
+            containerPort = var.port.container,
+            hostPort      = var.port.host, # fargate port must match container port
             protocol      = "tcp",
           },
         ],
@@ -149,19 +149,19 @@ resource "aws_ecs_task_definition" "one_off" {
   execution_role_arn       = aws_iam_role.task_execution.arn
   task_role_arn            = aws_iam_role.task_role.arn
 
-  cpu    = var.fargate ? var.container.cpu_units : null
-  memory = var.fargate ? var.container.mem_units : null
+  cpu    = var.limits.cpu
+  memory = var.limits.mem_max
 
   container_definitions = jsonencode(
     [
       {
         command           = [each.key]
         essential         = true,
-        memoryReservation = var.container.mem_reservation_units,
-        memory            = var.container.mem_units,
-        cpu               = var.container.cpu_units,
+        memoryReservation = var.limits.mem_min,
+        memory            = var.limits.mem_max,
+        cpu               = var.limits.cpu,
         name              = var.name,
-        image             = var.container.image,
+        image             = var.image,
         mountPoints = var.efs == null ? [] : [
           {
             sourceVolume  = var.efs.volume
@@ -243,8 +243,8 @@ resource "aws_security_group_rule" "ingress" {
 
   security_group_id = aws_security_group.this.id
   type              = "ingress"
-  from_port         = var.container.port
-  to_port           = var.container.port
+  from_port         = var.port.container
+  to_port           = var.port.container
   protocol          = "tcp"
   cidr_blocks       = ["0.0.0.0/0"]
   ipv6_cidr_blocks  = ["::/0"]
@@ -260,7 +260,7 @@ resource "aws_ecs_service" "this" {
   load_balancer {
     target_group_arn = aws_alb_target_group.this.arn
     container_name   = var.name
-    container_port   = var.container.port
+    container_port   = var.port.container
   }
 
   dynamic "network_configuration" {
@@ -333,6 +333,8 @@ resource "aws_iam_role_policy" "task_execution" {
 }
 
 resource "aws_iam_role_policy" "ssm_get" {
+  count  = length(var.secrets) == 0 ? 0 : 1
+
   name   = "${random_id.prefix.hex}-ssm-get"
   role   = aws_iam_role.task_execution.name
   policy = data.aws_iam_policy_document.task_execution_ssm_get.json
@@ -416,7 +418,7 @@ data "aws_iam_policy_document" "cloudwatch_one_off" {
 
 resource "aws_alb_target_group" "this" {
   name                 = random_id.prefix.hex
-  port                 = var.container.port
+  port                 = var.port.container
   protocol             = "HTTP"
   vpc_id               = var.vpc_id
   deregistration_delay = var.deregistration_delay # draining time

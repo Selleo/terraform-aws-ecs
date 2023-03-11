@@ -35,19 +35,29 @@ variable "desired_count" {
   description = "Desired task count."
 }
 
-variable "container" {
+variable "limits" {
   type = object({
-    cpu_units             = number
-    mem_units             = number
-    mem_reservation_units = number
-    image                 = string
-    port                  = number
+    cpu     = number
+    mem_min = number
+    mem_max = number
   })
   description = <<EOS
-    Service container configuration.
-    `mem_reservation_units` is used for allocation, exceeding `mem_units` will kill the container.
-    Memory units should be greater than reservation units.
+    Service container limits.
+    `mem_min` is used for allocation, exceeding `mem_max` will kill the container.
   EOS
+}
+
+variable "port" {
+  description = "Port mapping. Use 0 for dynamic host mapping. Fargate requires ports to be the same."
+  type = object({
+    host      = number
+    container = number
+  })
+}
+
+variable "image" {
+  type        = string
+  description = "Docker image"
 }
 
 # optional
