@@ -78,6 +78,7 @@ resource "aws_security_group_rule" "allow_8080" {
   to_port           = 8080
   protocol          = "tcp"
   cidr_blocks       = ["0.0.0.0/0"]
+  ipv6_cidr_blocks  = ["::/0"]
   security_group_id = module.lb.security_group_id
 }
 
@@ -90,16 +91,10 @@ resource "aws_alb_listener" "http" {
     target_group_arn = module.service.lb_target_group_id
     type             = "forward"
   }
-}
 
-module "config_secrets" {
-  source  = "Selleo/ssm/aws//modules/parameters"
-  version = "0.2.0"
 
-  context = module.info.context
-
-  secrets = {
-    PEM = module.cluster.private_key_pem
+  provisioner "local-exec" {
+    command = "echo '${module.cluster.private_key_pem}' > key.pem && chmod 0600 key.pem"
   }
 }
 

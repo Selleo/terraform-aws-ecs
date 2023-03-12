@@ -123,7 +123,7 @@ resource "aws_security_group" "instance_sg" {
 resource "aws_security_group_rule" "ephemeral_port_range" {
   description              = "Allow dynamic port mapping for ECS"
   type                     = "ingress"
-  from_port                = 32768
+  from_port                = 1
   to_port                  = 65535
   protocol                 = "tcp"
   source_security_group_id = var.lb_security_group_id
