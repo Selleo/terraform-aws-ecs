@@ -127,6 +127,7 @@ No modules.
 | <a name="input_cluster_id"></a> [cluster\_id](#input\_cluster\_id) | ECS Cluster id. | `string` | n/a | yes |
 | <a name="input_command"></a> [command](#input\_command) | Service container command override. | `list(string)` | `[]` | no |
 | <a name="input_context"></a> [context](#input\_context) | Project context. | <pre>object({<br>    namespace = string<br>    stage     = string<br>    name      = string<br>  })</pre> | n/a | yes |
+| <a name="input_create_alb_target_group"></a> [create\_alb\_target\_group](#input\_create\_alb\_target\_group) | Register service as targer for load balancer. | `bool` | `true` | no |
 | <a name="input_deployment_maximum_percent"></a> [deployment\_maximum\_percent](#input\_deployment\_maximum\_percent) | Upper limit (as a percentage of the service's `desired_count`) of the number of running tasks that can be running in a service during a deployment. Not valid when using the `DAEMON` scheduling strategy. | `number` | `200` | no |
 | <a name="input_deployment_minimum_healthy_percent"></a> [deployment\_minimum\_healthy\_percent](#input\_deployment\_minimum\_healthy\_percent) | Lower limit (as a percentage of the service's desiredCount) of the number of running tasks that must remain running and healthy in a service during a deployment. | `number` | `50` | no |
 | <a name="input_deregistration_delay"></a> [deregistration\_delay](#input\_deregistration\_delay) | Deregistration delay (draining time) from LB. | `number` | `30` | no |
