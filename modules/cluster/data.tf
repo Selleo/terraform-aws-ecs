@@ -8,8 +8,3 @@ data "aws_ami" "ecs_optimized" {
     values = ["amzn2-ami-ecs-hvm-*-x86_64-ebs"]
   }
 }
-
-data "aws_vpc" "this" {
-  id = var.vpc_id
-}
-
