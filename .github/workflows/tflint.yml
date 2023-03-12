@@ -21,7 +21,7 @@ jobs:
     - uses: terraform-linters/setup-tflint@v2
       name: Setup TFLint
       with:
-        tflint_version: v0.38.1
+        tflint_version: v0.45.0
 
     - name: Show version
       run: tflint --version
@@ -30,4 +30,7 @@ jobs:
       run: tflint --init
 
     - name: Run TFLint
-      run: tflint -f compact
+      run:
+        tflint -f compact .
+        tflint -f compact modules/cluster
+        tflint -f compact modules/service
