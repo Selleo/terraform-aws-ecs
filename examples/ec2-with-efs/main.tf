@@ -120,25 +120,6 @@ module "secrets" {
   }
 }
 
-module "config_secrets" {
-  source  = "Selleo/ssm/aws//modules/parameters"
-  version = "0.2.0"
-
-  context = {
-    namespace = "example"
-    stage     = "staging"
-    name      = "config"
-  }
-
-  secrets = {
-    PEM = module.cluster.private_key_pem
-  }
-}
-
-output "lb_dns" {
-  value = "http://${module.lb.dns_name}"
-}
-
 module "efs" {
   source  = "Selleo/efs/aws//modules/volume"
   version = "0.1.0"
@@ -155,4 +136,14 @@ module "efs" {
     subnets     = module.vpc.public_subnets
     cidr_blocks = [module.vpc.vpc_cidr_block]
   }
+}
+
+resource "null_resource" "output_pem" {
+  provisioner "local-exec" {
+    command = "echo '${module.cluster.private_key_pem}' > key.pem && chmod 0600 key.pem"
+  }
+}
+
+output "lb_dns" {
+  value = "http://${module.lb.dns_name}"
 }

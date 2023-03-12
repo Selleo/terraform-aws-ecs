@@ -91,8 +91,9 @@ resource "aws_alb_listener" "http" {
     target_group_arn = module.service.lb_target_group_id
     type             = "forward"
   }
+}
 
-
+resource "null_resource" "output_pem" {
   provisioner "local-exec" {
     command = "echo '${module.cluster.private_key_pem}' > key.pem && chmod 0600 key.pem"
   }
