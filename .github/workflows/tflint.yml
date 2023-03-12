@@ -1,24 +1,22 @@
-name: Lint
+name: Terraform Lint
 on:
-  push:
-    branches: [ main ]
-  pull_request:
+  - pull_request
 
 jobs:
   tflint:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
       name: Checkout source code
 
-    - uses: actions/cache@v2
+    - uses: actions/cache@v3
       name: Cache plugin dir
       with:
         path: ~/.tflint.d/plugins
-        key: $tflint-${{ hashFiles('.tflint.hcl') }}
+        key: tflint-${{ hashFiles('.tflint.hcl') }}
 
-    - uses: terraform-linters/setup-tflint@v2
+    - uses: terraform-linters/setup-tflint@v3
       name: Setup TFLint
       with:
         tflint_version: v0.45.0
@@ -28,9 +26,12 @@ jobs:
 
     - name: Init TFLint
       run: tflint --init
+      env:
+        # https://github.com/terraform-linters/tflint/blob/master/docs/user-guide/plugins.md#avoiding-rate-limiting
+        GITHUB_TOKEN: ${{ github.token }}
 
     - name: Run TFLint
-      run:
+      run: |
         tflint -f compact .
         tflint -f compact modules/cluster
         tflint -f compact modules/service
