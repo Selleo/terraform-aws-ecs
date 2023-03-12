@@ -62,6 +62,12 @@ variable "image" {
 
 # optional
 
+variable "create_alb_target_group" {
+  description = "Register service as targer for load balancer."
+  type        = bool
+  default     = true
+}
+
 variable "fargate" {
   description = "Whether to run in FARGATE mode (serverless)."
   type        = bool

@@ -257,10 +257,14 @@ resource "aws_ecs_service" "this" {
 
   launch_type = var.fargate ? "FARGATE" : "EC2"
 
-  load_balancer {
-    target_group_arn = aws_alb_target_group.this.arn
-    container_name   = var.name
-    container_port   = var.port.container
+  dynamic "load_balancer" {
+    for_each = var.create_alb_target_group ? [1] : []
+
+    content {
+      target_group_arn = aws_alb_target_group.this[0].arn
+      container_name   = var.name
+      container_port   = var.port.container
+    }
   }
 
   dynamic "network_configuration" {
@@ -333,7 +337,7 @@ resource "aws_iam_role_policy" "task_execution" {
 }
 
 resource "aws_iam_role_policy" "ssm_get" {
-  count  = length(var.secrets) == 0 ? 0 : 1
+  count = length(var.secrets) == 0 ? 0 : 1
 
   name   = "${random_id.prefix.hex}-ssm-get"
   role   = aws_iam_role.task_execution.name
@@ -417,6 +421,8 @@ data "aws_iam_policy_document" "cloudwatch_one_off" {
 }
 
 resource "aws_alb_target_group" "this" {
+  count = var.create_alb_target_group ? 1 : 0
+
   name                 = random_id.prefix.hex
   port                 = var.port.container
   protocol             = "HTTP"

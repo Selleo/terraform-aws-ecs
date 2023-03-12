@@ -1,5 +1,5 @@
 output "lb_target_group_id" {
-  value       = aws_alb_target_group.this.id
+  value       = try(aws_alb_target_group.this[0].id, null)
   description = "ARN of the Target Group."
 }
 
