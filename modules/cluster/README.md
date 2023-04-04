@@ -68,6 +68,8 @@
 | <a name="input_protect_from_scale_in"></a> [protect\_from\_scale\_in](#input\_protect\_from\_scale\_in) | If protect from scale in is enabled, newly launched instances will be protected from scale in by default. | `bool` | `false` | no |
 | <a name="input_root_block_configuration"></a> [root\_block\_configuration](#input\_root\_block\_configuration) | Configuration for root block device block. | <pre>object({<br>    volume_type = string<br>    volume_size = number<br>  })</pre> | <pre>{<br>  "volume_size": 30,<br>  "volume_type": "gp2"<br>}</pre> | no |
 | <a name="input_security_groups"></a> [security\_groups](#input\_security\_groups) | List of security groups attached to launch configuration. | `list(string)` | `[]` | no |
+| <a name="input_ssh_cidr_ipv4"></a> [ssh\_cidr\_ipv4](#input\_ssh\_cidr\_ipv4) | IPv4 CIDR block that will be granted access to SSH on ECS instances. | `list(string)` | `[]` | no |
+| <a name="input_ssh_cidr_ipv6"></a> [ssh\_cidr\_ipv6](#input\_ssh\_cidr\_ipv6) | IPv6 CIDR block that will be granted access to SSH on ECS instances. | `list(string)` | `[]` | no |
 | <a name="input_ssm_tag_key"></a> [ssm\_tag\_key](#input\_ssm\_tag\_key) | Tag key to add for SSM access | `string` | `"ssm.group"` | no |
 | <a name="input_ssm_tag_value"></a> [ssm\_tag\_value](#input\_ssm\_tag\_value) | Tag value to add for SSM access | `string` | `"true"` | no |
 | <a name="input_subnet_ids"></a> [subnet\_ids](#input\_subnet\_ids) | List of AWS subent IDs for Autoscaling group. | `list(string)` | n/a | yes |
