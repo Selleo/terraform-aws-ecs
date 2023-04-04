@@ -247,8 +247,8 @@ resource "aws_security_group_rule" "allow_ssh" {
   from_port         = 22
   to_port           = 22
   protocol          = "tcp"
-  cidr_blocks       = ["0.0.0.0/0"]
-  ipv6_cidr_blocks  = ["::/0"]
+  cidr_blocks       = var.ssh_cidr_ipv4
+  ipv6_cidr_blocks  = var.ssh_cidr_ipv6
 }
 
 resource "aws_iam_group" "deployment" {

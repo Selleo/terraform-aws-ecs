@@ -164,3 +164,15 @@ variable "efs" {
   description = "EFS volume to mount to ECS"
   default     = null
 }
+
+variable "ssh_cidr_ipv4" {
+  type        = list(string)
+  description = "IPv4 CIDR block that will be granted access to SSH on ECS instances."
+  default     = [""]
+}
+
+variable "ssh_cidr_ipv6" {
+  type        = list(string)
+  description = "IPv6 CIDR block that will be granted access to SSH on ECS instances."
+  default     = [""]
+}
