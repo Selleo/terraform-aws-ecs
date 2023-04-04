@@ -168,11 +168,11 @@ variable "efs" {
 variable "ssh_cidr_ipv4" {
   type        = list(string)
   description = "IPv4 CIDR block that will be granted access to SSH on ECS instances."
-  default     = [""]
+  default     = []
 }
 
 variable "ssh_cidr_ipv6" {
   type        = list(string)
   description = "IPv6 CIDR block that will be granted access to SSH on ECS instances."
-  default     = [""]
+  default     = []
 }
