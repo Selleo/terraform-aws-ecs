@@ -67,7 +67,7 @@ resource "aws_cloudwatch_log_group" "one_off" {
 }
 
 resource "aws_ecs_task_definition" "this" {
-  family                   = var.name
+  family                   = random_id.prefix.hex
   network_mode             = var.fargate ? "awsvpc" : "bridge"
   requires_compatibilities = var.fargate ? ["FARGATE"] : ["EC2"]
   execution_role_arn       = aws_iam_role.task_execution.arn
@@ -143,7 +143,7 @@ resource "aws_ecs_task_definition" "this" {
 resource "aws_ecs_task_definition" "one_off" {
   for_each = var.one_off_commands
 
-  family                   = "${var.name}-${each.key}"
+  family                   = "${random_id.prefix.hex}-${each.key}"
   network_mode             = var.fargate ? "awsvpc" : "bridge"
   requires_compatibilities = var.fargate ? ["FARGATE"] : ["EC2"]
   execution_role_arn       = aws_iam_role.task_execution.arn
@@ -381,7 +381,7 @@ data "aws_iam_policy_document" "task_execution" {
 }
 
 resource "aws_iam_role_policy" "cloudwatch" {
-  name   = "${var.name}-role-cloudwatch-policy"
+  name   = "${random_id.prefix.hex}-role-cloudwatch-policy"
   role   = aws_iam_role.task_execution.id
   policy = data.aws_iam_policy_document.cloudwatch.json
 }
@@ -389,7 +389,7 @@ resource "aws_iam_role_policy" "cloudwatch" {
 resource "aws_iam_role_policy" "cloudwatch_one_off" {
   for_each = var.one_off_commands
 
-  name   = "${var.name}-${each.key}-cloudwatch-policy"
+  name   = "${random_id.prefix.hex}-${each.key}-cloudwatch-policy"
   role   = aws_iam_role.task_execution.id
   policy = data.aws_iam_policy_document.cloudwatch_one_off[each.key].json
 }
