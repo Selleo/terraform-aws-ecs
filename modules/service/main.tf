@@ -544,3 +544,51 @@ data "aws_iam_policy_document" "run_task" {
     ]
   }
 }
+
+# cron
+
+resource "aws_iam_role" "cron_task_execution" {
+  name = "${random_id.prefix.hex}-cron-task-execution"
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action = "sts:AssumeRole"
+        Effect = "Allow"
+        Principal = {
+          Service = "scheduler.amazonaws.com"
+        }
+      },
+    ]
+  })
+
+  tags = merge(local.tags, { "resource.group" = "identity" })
+}
+
+resource "aws_scheduler_schedule_group" "cron" {
+  name = "${random_id.prefix.hex}-cron"
+
+  tags = merge(local.tags, { "resource.group" = "compute" })
+}
+
+resource "aws_scheduler_schedule" "cron" {
+  for_each = var.one_off_commands
+
+  name       = each.key
+  group_name = aws_scheduler_schedule_goup.cron.name
+
+  flexible_time_window {
+    mode = "OFF"
+  }
+
+  schedule_expression = "cron(${each.value})"
+
+  target {
+    role_arn = aws_iam_role.cron_task_execution.arn
+    arn      = var.cluster_id
+  }
+
+  ecs_paramteres {
+    task_definition_arn = aws_ecs_task_definition.one_off[each.key].arn
+  }
+}

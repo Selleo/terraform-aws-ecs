@@ -63,6 +63,12 @@ variable "port" {
   default = null
 }
 
+variable "cron" {
+  description = "Map of one-off commands and cron expressions"
+  type        = map(string)
+  default     = {}
+}
+
 variable "create_alb_target_group" {
   description = "Register service as targer for load balancer."
   type        = bool
