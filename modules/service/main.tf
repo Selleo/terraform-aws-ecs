@@ -10,6 +10,13 @@ locals {
     "context.name"        = var.context.name
   }, var.tags)
 
+  # when no ports are specified, we assume this is a worker
+  is_worker = var.port == null ? true : false
+  # when fargate is used ports must be specified
+  is_fargate = var.fargate && !local.is_worker
+  # when LB is used ports must be specified
+  needs_lb = var.create_alb_target_group && !local.is_worker
+
   task_definition = "${aws_ecs_task_definition.this.family}:${max(
     aws_ecs_task_definition.this.revision,
     data.aws_ecs_task_definition.this.revision,
@@ -68,8 +75,8 @@ resource "aws_cloudwatch_log_group" "one_off" {
 
 resource "aws_ecs_task_definition" "this" {
   family                   = random_id.prefix.hex
-  network_mode             = var.fargate ? "awsvpc" : "bridge"
-  requires_compatibilities = var.fargate ? ["FARGATE"] : ["EC2"]
+  network_mode             = local.is_fargate ? "awsvpc" : "bridge"
+  requires_compatibilities = local.is_fargate ? ["FARGATE"] : ["EC2"]
   execution_role_arn       = aws_iam_role.task_execution.arn
   task_role_arn            = aws_iam_role.task_role.arn
 
@@ -93,7 +100,8 @@ resource "aws_ecs_task_definition" "this" {
           }
         ],
         volumesFrom = [],
-        portMappings = [
+        # workers do not need port mappings
+        portMappings = local.is_worker ? [] : [
           {
             containerPort = var.port.container,
             hostPort      = var.port.host, # fargate port must match container port
@@ -110,6 +118,7 @@ resource "aws_ecs_task_definition" "this" {
         ],
 
         secrets = local.secrets,
+        dockerLabels = var.labels,
 
         logConfiguration = {
           logDriver = "awslogs",
@@ -144,8 +153,8 @@ resource "aws_ecs_task_definition" "one_off" {
   for_each = var.one_off_commands
 
   family                   = "${random_id.prefix.hex}-${each.key}"
-  network_mode             = var.fargate ? "awsvpc" : "bridge"
-  requires_compatibilities = var.fargate ? ["FARGATE"] : ["EC2"]
+  network_mode             = local.is_fargate ? "awsvpc" : "bridge"
+  requires_compatibilities = local.is_fargate ? ["FARGATE"] : ["EC2"]
   execution_role_arn       = aws_iam_role.task_execution.arn
   task_role_arn            = aws_iam_role.task_role.arn
 
@@ -226,7 +235,7 @@ resource "aws_security_group" "this" {
 
 # needed by fargate
 resource "aws_security_group_rule" "egress" {
-  count = var.fargate ? 1 : 0
+  count = local.is_fargate ? 1 : 0
 
   security_group_id = aws_security_group.this.id
   type              = "egress"
@@ -239,7 +248,7 @@ resource "aws_security_group_rule" "egress" {
 
 # needed by fargate
 resource "aws_security_group_rule" "ingress" {
-  count = var.fargate ? 1 : 0
+  count = local.is_fargate ? 1 : 0
 
   security_group_id = aws_security_group.this.id
   type              = "ingress"
@@ -255,10 +264,10 @@ resource "aws_ecs_service" "this" {
   cluster         = var.cluster_id
   task_definition = local.task_definition
 
-  launch_type = var.fargate ? "FARGATE" : "EC2"
+  launch_type = local.is_fargate ? "FARGATE" : "EC2"
 
   dynamic "load_balancer" {
-    for_each = var.create_alb_target_group ? [1] : []
+    for_each = local.needs_lb ? [1] : []
 
     content {
       target_group_arn = aws_alb_target_group.this[0].arn
@@ -268,7 +277,7 @@ resource "aws_ecs_service" "this" {
   }
 
   dynamic "network_configuration" {
-    for_each = var.fargate ? [1] : []
+    for_each = local.is_fargate ? [1] : []
 
     content {
       security_groups  = [aws_security_group.this.id]
@@ -282,7 +291,7 @@ resource "aws_ecs_service" "this" {
   deployment_maximum_percent         = var.deployment_maximum_percent
 
   dynamic "ordered_placement_strategy" {
-    for_each = var.fargate ? [] : local.ordered_placement_strategy
+    for_each = local.is_fargate ? [] : local.ordered_placement_strategy
 
     content {
       type  = ordered_placement_strategy.value.type
@@ -421,14 +430,14 @@ data "aws_iam_policy_document" "cloudwatch_one_off" {
 }
 
 resource "aws_alb_target_group" "this" {
-  count = var.create_alb_target_group ? 1 : 0
+  count = local.needs_lb ? 1 : 0
 
   name                 = random_id.prefix.hex
   port                 = var.port.container
   protocol             = "HTTP"
   vpc_id               = var.vpc_id
   deregistration_delay = var.deregistration_delay # draining time
-  target_type          = var.fargate ? "ip" : "instance"
+  target_type          = local.is_fargate ? "ip" : "instance"
 
   health_check {
     path                = var.health_check.path

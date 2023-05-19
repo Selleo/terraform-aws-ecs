@@ -47,20 +47,21 @@ variable "limits" {
   EOS
 }
 
-variable "port" {
-  description = "Port mapping. Use 0 for dynamic host mapping. Fargate requires ports to be the same."
-  type = object({
-    host      = number
-    container = number
-  })
-}
-
 variable "image" {
   type        = string
   description = "Docker image"
 }
 
 # optional
+
+variable "port" {
+  description = "Port mapping. Use 0 for dynamic host mapping. Fargate requires ports to be the same."
+  type = object({
+    host      = number
+    container = number
+  })
+  default = null
+}
 
 variable "create_alb_target_group" {
   description = "Register service as targer for load balancer."
@@ -130,6 +131,12 @@ variable "health_check_threshold" {
     healthy   = 3
     unhealthy = 3
   }
+}
+
+variable "labels" {
+  type        = map(string)
+  description = "Key-value map of labels."
+  default     = {}
 }
 
 variable "deregistration_delay" {
