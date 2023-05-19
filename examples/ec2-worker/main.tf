@@ -60,6 +60,10 @@ module "service" {
   cluster_id    = module.cluster.id
   desired_count = 1
 
+  labels = {
+    "this.is.label" = "true"
+  }
+
   image = "qbart/go-http-server-noop:latest"
   limits = {
     mem_min = 128

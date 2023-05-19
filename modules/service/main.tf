@@ -118,6 +118,7 @@ resource "aws_ecs_task_definition" "this" {
         ],
 
         secrets = local.secrets,
+        dockerLabels = var.labels,
 
         logConfiguration = {
           logDriver = "awslogs",

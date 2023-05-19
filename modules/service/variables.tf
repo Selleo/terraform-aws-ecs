@@ -63,7 +63,6 @@ variable "port" {
   default = null
 }
 
-
 variable "create_alb_target_group" {
   description = "Register service as targer for load balancer."
   type        = bool
@@ -132,6 +131,12 @@ variable "health_check_threshold" {
     healthy   = 3
     unhealthy = 3
   }
+}
+
+variable "labels" {
+  type        = map(string)
+  description = "Key-value map of labels."
+  default     = {}
 }
 
 variable "deregistration_delay" {
