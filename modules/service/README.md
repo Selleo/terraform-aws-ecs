@@ -138,11 +138,12 @@ No modules.
 | <a name="input_health_check"></a> [health\_check](#input\_health\_check) | Health check config for ALB target group. | <pre>object({<br>    path    = string<br>    matcher = string<br>  })</pre> | <pre>{<br>  "matcher": "200",<br>  "path": "/"<br>}</pre> | no |
 | <a name="input_health_check_threshold"></a> [health\_check\_threshold](#input\_health\_check\_threshold) | Health check thresholds for ALB target group. | <pre>object({<br>    timeout   = number<br>    interval  = number<br>    healthy   = number<br>    unhealthy = number<br>  })</pre> | <pre>{<br>  "healthy": 3,<br>  "interval": 15,<br>  "timeout": 10,<br>  "unhealthy": 3<br>}</pre> | no |
 | <a name="input_image"></a> [image](#input\_image) | Docker image | `string` | n/a | yes |
+| <a name="input_labels"></a> [labels](#input\_labels) | Key-value map of labels. | `map(string)` | `{}` | no |
 | <a name="input_limits"></a> [limits](#input\_limits) | Service container limits.<br>    `mem_min` is used for allocation, exceeding `mem_max` will kill the container. | <pre>object({<br>    cpu     = number<br>    mem_min = number<br>    mem_max = number<br>  })</pre> | n/a | yes |
 | <a name="input_log_retention_in_days"></a> [log\_retention\_in\_days](#input\_log\_retention\_in\_days) | Log retention in days for Cloudwatch. | `string` | `365` | no |
 | <a name="input_name"></a> [name](#input\_name) | ECS Service name. | `string` | n/a | yes |
 | <a name="input_one_off_commands"></a> [one\_off\_commands](#input\_one\_off\_commands) | Set of commands that the tasks are created for. | `set(string)` | `[]` | no |
-| <a name="input_port"></a> [port](#input\_port) | Port mapping. Use 0 for dynamic host mapping. Fargate requires ports to be the same. | <pre>object({<br>    host      = number<br>    container = number<br>  })</pre> | n/a | yes |
+| <a name="input_port"></a> [port](#input\_port) | Port mapping. Use 0 for dynamic host mapping. Fargate requires ports to be the same. | <pre>object({<br>    host      = number<br>    container = number<br>  })</pre> | `null` | no |
 | <a name="input_secrets"></a> [secrets](#input\_secrets) | Paths to secret. All secrets are read under the path. | `set(string)` | `[]` | no |
 | <a name="input_subnet_ids"></a> [subnet\_ids](#input\_subnet\_ids) | List of AWS subent IDs for service. | `list(string)` | n/a | yes |
 | <a name="input_tags"></a> [tags](#input\_tags) | Additional tags attached to resources. | `map(string)` | `{}` | no |
