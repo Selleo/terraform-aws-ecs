@@ -25,7 +25,7 @@ TODO
 | <a name="module_lb"></a> [lb](#module\_lb) | Selleo/backend/aws//modules/load-balancer | 0.23.0 |
 | <a name="module_secrets"></a> [secrets](#module\_secrets) | Selleo/ssm/aws//modules/parameters | 0.2.0 |
 | <a name="module_service"></a> [service](#module\_service) | ../../modules/service | n/a |
-| <a name="module_vpc"></a> [vpc](#module\_vpc) | terraform-aws-modules/vpc/aws | n/a |
+| <a name="module_vpc"></a> [vpc](#module\_vpc) | terraform-aws-modules/vpc/aws | ~> 4.0 |
 
 ## Resources
 
