@@ -117,7 +117,7 @@ resource "aws_ecs_task_definition" "this" {
           }
         ],
 
-        secrets = local.secrets,
+        secrets      = local.secrets,
         dockerLabels = var.labels,
 
         logConfiguration = {
@@ -260,9 +260,10 @@ resource "aws_security_group_rule" "ingress" {
 }
 
 resource "aws_ecs_service" "this" {
-  name            = var.name
-  cluster         = var.cluster_id
-  task_definition = local.task_definition
+  name                   = var.name
+  cluster                = var.cluster_id
+  task_definition        = local.task_definition
+  enable_execute_command = var.enable_execute_command
 
   launch_type = local.is_fargate ? "FARGATE" : "EC2"
 

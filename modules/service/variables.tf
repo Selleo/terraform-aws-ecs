@@ -63,6 +63,12 @@ variable "port" {
   default = null
 }
 
+variable "enable_execute_command" {
+  description = "Allow to exec into containers."
+  type        = bool
+  default     = true
+}
+
 variable "create_alb_target_group" {
   description = "Register service as targer for load balancer."
   type        = bool
