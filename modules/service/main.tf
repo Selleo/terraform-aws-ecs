@@ -117,7 +117,7 @@ resource "aws_ecs_task_definition" "this" {
           }
         ],
 
-        secrets = local.secrets,
+        secrets      = local.secrets,
         dockerLabels = var.labels,
 
         logConfiguration = {
@@ -260,9 +260,10 @@ resource "aws_security_group_rule" "ingress" {
 }
 
 resource "aws_ecs_service" "this" {
-  name            = var.name
-  cluster         = var.cluster_id
-  task_definition = local.task_definition
+  name                   = var.name
+  cluster                = var.cluster_id
+  task_definition        = local.task_definition
+  enable_execute_command = var.enable_execute_command
 
   launch_type = local.is_fargate ? "FARGATE" : "EC2"
 
@@ -320,6 +321,12 @@ resource "aws_iam_role" "task_role" {
   tags = merge(local.tags, { "resource.group" = "identity" })
 }
 
+resource "aws_iam_role_policy" "task_role" {
+  name   = "${random_id.prefix.hex}-task"
+  role   = aws_iam_role.task_role.name
+  policy = data.aws_iam_policy_document.task_role.json
+}
+
 
 resource "aws_iam_role" "task_execution" {
   name = "${random_id.prefix.hex}-task-execution"
@@ -372,6 +379,21 @@ data "aws_ssm_parameters_by_path" "secrets" {
   for_each = var.secrets
 
   path = each.value
+}
+
+data "aws_iam_policy_document" "task_role" {
+  statement {
+    sid    = "Task"
+    effect = "Allow"
+    actions = [
+      "ssmmessages:CreateControlChannel",
+      "ssmmessages:CreateDataChannel",
+      "ssmmessages:OpenControlChannel",
+      "ssmmessages:OpenDataChannel",
+    ]
+
+    resources = ["*"]
+  }
 }
 
 data "aws_iam_policy_document" "task_execution" {
