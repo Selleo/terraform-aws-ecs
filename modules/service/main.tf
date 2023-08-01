@@ -321,6 +321,12 @@ resource "aws_iam_role" "task_role" {
   tags = merge(local.tags, { "resource.group" = "identity" })
 }
 
+resource "aws_iam_role_policy" "task_role" {
+  name   = "${random_id.prefix.hex}-task"
+  role   = aws_iam_role.task_role.name
+  policy = data.aws_iam_policy_document.task_role.json
+}
+
 
 resource "aws_iam_role" "task_execution" {
   name = "${random_id.prefix.hex}-task-execution"
@@ -373,6 +379,21 @@ data "aws_ssm_parameters_by_path" "secrets" {
   for_each = var.secrets
 
   path = each.value
+}
+
+data "aws_iam_policy_document" "task_role" {
+  statement {
+    sid    = "Task"
+    effect = "Allow"
+    actions = [
+      "ssmmessages:CreateControlChannel",
+      "ssmmessages:CreateDataChannel",
+      "ssmmessages:OpenControlChannel",
+      "ssmmessages:OpenDataChannel",
+    ]
+
+    resources = ["*"]
+  }
 }
 
 data "aws_iam_policy_document" "task_execution" {
