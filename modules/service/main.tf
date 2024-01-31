@@ -12,33 +12,8 @@ locals {
 
   # when no ports are specified, we assume this is a worker
   is_worker = var.port == null ? true : false
-  # when fargate is used ports must be specified
-  is_fargate = var.fargate && !local.is_worker
   # when LB is used ports must be specified
   needs_lb = var.create_alb_target_group && !local.is_worker
-
-  task_definition = "${aws_ecs_task_definition.this.family}:${max(
-    aws_ecs_task_definition.this.revision,
-    data.aws_ecs_task_definition.this.revision,
-  )}"
-
-  container_definition_overrides = {
-    command = var.command
-  }
-
-  secrets_kv = [
-    for each_secret in data.aws_ssm_parameters_by_path.secrets :
-    zipmap(each_secret.names, each_secret.arns)
-  ]
-
-  secrets = flatten([
-    for secrets_kv in local.secrets_kv : [
-      for k, v in secrets_kv : {
-        name      = reverse(split("/", k))[0]
-        valueFrom = v
-      }
-    ]
-  ])
 
   ordered_placement_strategy = [
     {
@@ -75,76 +50,48 @@ resource "aws_cloudwatch_log_group" "one_off" {
 
 resource "aws_ecs_task_definition" "this" {
   family                   = random_id.prefix.hex
-  network_mode             = local.is_fargate ? "awsvpc" : "bridge"
-  requires_compatibilities = local.is_fargate ? ["FARGATE"] : ["EC2"]
+  network_mode             = "bridge"
+  requires_compatibilities = ["EC2"]
   execution_role_arn       = aws_iam_role.task_execution.arn
   task_role_arn            = aws_iam_role.task_role.arn
 
-  cpu    = var.limits.cpu
-  memory = var.limits.mem_max
-
-  container_definitions = jsonencode(
-    [
-      merge({
-        essential         = true,
-        memoryReservation = var.limits.mem_min,
-        memory            = var.limits.mem_max,
-        cpu               = var.limits.cpu,
-        name              = var.name,
-        image             = var.image,
-        mountPoints = var.efs == null ? [] : [
-          {
-            sourceVolume  = var.efs.volume
-            containerPath = var.efs.mount_path
-            readOnly      = false
-          }
-        ],
-        volumesFrom = [],
-        # workers do not need port mappings
-        portMappings = local.is_worker ? [] : [
-          {
-            containerPort = var.port.container,
-            hostPort      = var.port.host, # fargate port must match container port
-            protocol      = "tcp",
-          },
-        ],
-
-        environment = [
-          for k, v in var.envs :
-          {
-            name  = k
-            value = v
-          }
-        ],
-
-        secrets      = local.secrets,
-        dockerLabels = var.labels,
-
-        logConfiguration = {
-          logDriver = "awslogs",
-          options = {
-            awslogs-group         = aws_cloudwatch_log_group.this.name,
-            awslogs-region        = data.aws_region.this.name,
-            awslogs-stream-prefix = "ecs",
-          },
+  container_definitions = jsonencode([
+    {
+      essential         = true,
+      memoryReservation = 32
+      memory            = 64
+      cpu               = 64
+      name              = var.name
+      image             = "qbart/go-http-server-noop:0.3.0"
+      # workers do not need port mappings
+      portMappings = local.is_worker ? [] : [
+        {
+          containerPort = var.port,
+          hostPort      = 0,
+          protocol      = "tcp",
         },
-      }, length(var.command) == 0 ? {} : local.container_definition_overrides) # merge only if command not empty
-  ])
+      ],
+      environment = [
+        {
+          name  = "APP_ENV"
+          value = var.context.stage
+        },
+        {
+          name  = "ADDR"
+          value = var.port == null ? ":3000" : ":${var.port}"
+        },
+      ],
 
-  dynamic "volume" {
-    for_each = var.efs == null ? [] : [var.efs.volume]
-
-    content {
-      name = var.efs.volume
-
-      efs_volume_configuration {
-        file_system_id = var.efs.id
-        root_directory = "/"
-        # transit_encryption      = "ENABLED"
-        # transit_encryption_port = 2999
-      }
+      logConfiguration = {
+        logDriver = "awslogs",
+        options = {
+          awslogs-group         = aws_cloudwatch_log_group.this.name,
+          awslogs-region        = data.aws_region.this.name,
+          awslogs-stream-prefix = "ecs",
+        },
+      },
     }
-  }
+  ])
 
   tags = merge(local.tags, { "resource.group" = "compute" })
 }
@@ -153,119 +100,42 @@ resource "aws_ecs_task_definition" "one_off" {
   for_each = var.one_off_commands
 
   family                   = "${random_id.prefix.hex}-${each.key}"
-  network_mode             = local.is_fargate ? "awsvpc" : "bridge"
-  requires_compatibilities = local.is_fargate ? ["FARGATE"] : ["EC2"]
+  network_mode             = "bridge"
+  requires_compatibilities = ["EC2"]
   execution_role_arn       = aws_iam_role.task_execution.arn
   task_role_arn            = aws_iam_role.task_role.arn
 
-  cpu    = var.limits.cpu
-  memory = var.limits.mem_max
+  container_definitions = jsonencode([
+    {
+      essential         = true,
+      memoryReservation = 32
+      memory            = 64
+      cpu               = 64
+      name              = var.name
+      image             = "busybox:latest"
+      command           = ["sh", "-c", "echo 'Hi'"]
 
-  container_definitions = jsonencode(
-    [
-      {
-        command           = [each.key]
-        essential         = true,
-        memoryReservation = var.limits.mem_min,
-        memory            = var.limits.mem_max,
-        cpu               = var.limits.cpu,
-        name              = var.name,
-        image             = var.image,
-        mountPoints = var.efs == null ? [] : [
-          {
-            sourceVolume  = var.efs.volume
-            containerPath = var.efs.mount_path
-            readOnly      = false
-          }
-        ],
-        volumesFrom  = [],
-        portMappings = [],
-
-        environment = [
-          for k, v in var.envs :
-          {
-            name  = k
-            value = v
-          }
-        ],
-
-        secrets = local.secrets,
-
-        logConfiguration = {
-          logDriver = "awslogs",
-          options = {
-            awslogs-group         = aws_cloudwatch_log_group.one_off[each.key].name,
-            awslogs-region        = data.aws_region.this.name,
-            awslogs-stream-prefix = "ecs",
-          },
+      logConfiguration = {
+        logDriver = "awslogs",
+        options = {
+          awslogs-group         = aws_cloudwatch_log_group.one_off[each.key].name,
+          awslogs-region        = data.aws_region.this.name,
+          awslogs-stream-prefix = "ecs",
         },
-      }
+      },
+    }
   ])
 
-  dynamic "volume" {
-    for_each = var.efs == null ? [] : [var.efs.volume]
-
-    content {
-      name = var.efs.volume
-
-      efs_volume_configuration {
-        file_system_id = var.efs.id
-        root_directory = "/"
-        # transit_encryption      = "ENABLED"
-        # transit_encryption_port = 2999
-      }
-    }
-  }
-
   tags = merge(local.tags, { "resource.group" = "compute" })
-}
-
-data "aws_ecs_task_definition" "this" {
-  task_definition = aws_ecs_task_definition.this.family
-  depends_on      = [aws_ecs_task_definition.this]
-}
-
-resource "aws_security_group" "this" {
-  name   = "${random_id.prefix.hex}-ecs-tasks"
-  vpc_id = var.vpc_id
-
-  tags = merge(local.tags, { "resource.group" = "network" })
-}
-
-
-# needed by fargate
-resource "aws_security_group_rule" "egress" {
-  count = local.is_fargate ? 1 : 0
-
-  security_group_id = aws_security_group.this.id
-  type              = "egress"
-  from_port         = 0
-  to_port           = 0
-  protocol          = "-1"
-  cidr_blocks       = ["0.0.0.0/0"]
-  ipv6_cidr_blocks  = ["::/0"]
-}
-
-# needed by fargate
-resource "aws_security_group_rule" "ingress" {
-  count = local.is_fargate ? 1 : 0
-
-  security_group_id = aws_security_group.this.id
-  type              = "ingress"
-  from_port         = var.port.container
-  to_port           = var.port.container
-  protocol          = "tcp"
-  cidr_blocks       = ["0.0.0.0/0"]
-  ipv6_cidr_blocks  = ["::/0"]
 }
 
 resource "aws_ecs_service" "this" {
   name                   = var.name
   cluster                = var.cluster_id
-  task_definition        = local.task_definition
+  task_definition        = "${aws_ecs_task_definition.this.family}:${aws_ecs_task_definition.this.revision}"
   enable_execute_command = var.enable_execute_command
 
-  launch_type = local.is_fargate ? "FARGATE" : "EC2"
+  launch_type = "EC2"
 
   dynamic "load_balancer" {
     for_each = local.needs_lb ? [1] : []
@@ -273,17 +143,7 @@ resource "aws_ecs_service" "this" {
     content {
       target_group_arn = aws_alb_target_group.this[0].arn
       container_name   = var.name
-      container_port   = var.port.container
-    }
-  }
-
-  dynamic "network_configuration" {
-    for_each = local.is_fargate ? [1] : []
-
-    content {
-      security_groups  = [aws_security_group.this.id]
-      subnets          = var.subnet_ids
-      assign_public_ip = true
+      container_port   = var.port
     }
   }
 
@@ -292,7 +152,7 @@ resource "aws_ecs_service" "this" {
   deployment_maximum_percent         = var.deployment_maximum_percent
 
   dynamic "ordered_placement_strategy" {
-    for_each = local.is_fargate ? [] : local.ordered_placement_strategy
+    for_each = local.ordered_placement_strategy
 
     content {
       type  = ordered_placement_strategy.value.type
@@ -301,6 +161,12 @@ resource "aws_ecs_service" "this" {
   }
 
   tags = merge(local.tags, { "resource.group" = "compute" })
+
+  lifecycle {
+    ignore_changes = [
+      task_definition,
+    ]
+  }
 }
 
 resource "aws_iam_role" "task_role" {
@@ -373,12 +239,6 @@ data "aws_iam_policy_document" "task_execution_ssm_get" {
       "arn:aws:ssm:${data.aws_region.this.name}:${data.aws_caller_identity.this.account_id}:parameter${secret}/*"
     ]
   }
-}
-
-data "aws_ssm_parameters_by_path" "secrets" {
-  for_each = var.secrets
-
-  path = each.value
 }
 
 data "aws_iam_policy_document" "task_role" {
@@ -455,11 +315,11 @@ resource "aws_alb_target_group" "this" {
   count = local.needs_lb ? 1 : 0
 
   name                 = random_id.prefix.hex
-  port                 = var.port.container
+  port                 = var.port
   protocol             = "HTTP"
   vpc_id               = var.vpc_id
   deregistration_delay = var.deregistration_delay # draining time
-  target_type          = local.is_fargate ? "ip" : "instance"
+  target_type          = "instance"
 
   health_check {
     path                = var.health_check.path
