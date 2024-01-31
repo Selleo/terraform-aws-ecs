@@ -35,32 +35,12 @@ variable "desired_count" {
   description = "Desired task count."
 }
 
-variable "limits" {
-  type = object({
-    cpu     = number
-    mem_min = number
-    mem_max = number
-  })
-  description = <<EOS
-    Service container limits.
-    `mem_min` is used for allocation, exceeding `mem_max` will kill the container.
-  EOS
-}
-
-variable "image" {
-  type        = string
-  description = "Docker image"
-}
-
 # optional
 
 variable "port" {
-  description = "Port mapping. Use 0 for dynamic host mapping. Fargate requires ports to be the same."
-  type = object({
-    host      = number
-    container = number
-  })
-  default = null
+  description = "Container port"
+  type        = number
+  default     = null
 }
 
 variable "enable_execute_command" {
@@ -75,34 +55,16 @@ variable "create_alb_target_group" {
   default     = true
 }
 
-variable "fargate" {
-  description = "Whether to run in FARGATE mode (serverless)."
-  type        = bool
-  default     = false
-}
-
 variable "secrets" {
   description = "Paths to secret. All secrets are read under the path."
   type        = set(string)
   default     = []
 }
 
-variable "envs" {
-  description = "Key-value map of environment variables."
-  type        = map(string)
-  default     = {}
-}
-
 variable "tags" {
   type        = map(string)
   description = "Additional tags attached to resources."
   default     = {}
-}
-
-variable "command" {
-  type        = list(string)
-  description = "Service container command override."
-  default     = []
 }
 
 variable "one_off_commands" {
@@ -137,12 +99,6 @@ variable "health_check_threshold" {
     healthy   = 3
     unhealthy = 3
   }
-}
-
-variable "labels" {
-  type        = map(string)
-  description = "Key-value map of labels."
-  default     = {}
 }
 
 variable "deregistration_delay" {

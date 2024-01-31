@@ -5,7 +5,7 @@ resource "random_id" "example" {
 }
 
 module "vpc" {
-  source = "terraform-aws-modules/vpc/aws"
+  source  = "terraform-aws-modules/vpc/aws"
   version = "~> 4.0"
 
   name = random_id.example.hex
@@ -65,19 +65,10 @@ module "service" {
   vpc_id        = module.vpc.vpc_id
   subnet_ids    = module.vpc.public_subnets
   cluster_id    = module.cluster.id
-  desired_count = 1
+  desired_count = 2
   secrets       = ["/example-ecs-ec2/staging/api"]
 
-  image = "qbart/go-http-server-noop:latest"
-  limits = {
-    mem_min = 128
-    mem_max = 256
-    cpu     = 256
-  }
-  port = {
-    host      = 0
-    container = 4000
-  }
+  port = 4000
 
   depends_on = [module.secrets]
 }
