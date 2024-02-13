@@ -65,6 +65,9 @@ module "service" {
   }
 
   image = "qbart/go-http-server-noop:latest"
+  envs = {
+    ADDR = ":4000"
+  }
   limits = {
     mem_min = 128
     mem_max = 256

@@ -69,9 +69,12 @@ module "service" {
   secrets       = ["/example-ecs-ec2/staging/api"]
 
   image = "qbart/go-http-server-noop:latest"
+  envs = {
+    ADDR = ":4000"
+  }
   limits = {
-    mem_min = 128
-    mem_max = 256
+    mem_min = 64
+    mem_max = 128
     cpu     = 256
   }
   port = {

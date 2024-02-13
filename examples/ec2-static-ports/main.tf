@@ -61,6 +61,9 @@ module "service" {
   desired_count = 1
 
   image = "qbart/go-http-server-noop:latest"
+  envs = {
+    ADDR = ":4000"
+  }
   port = {
     host      = 8080
     container = 4000
