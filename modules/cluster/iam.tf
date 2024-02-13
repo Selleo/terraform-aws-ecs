@@ -40,6 +40,7 @@ data "aws_iam_policy_document" "ecs_instance" {
       "ecs:Poll",
       "ecs:Submit*",
       "ecs:StartTelemetrySession",
+      "ecs:TagResource",
     ]
 
     resources = ["*"]
